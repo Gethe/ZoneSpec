@@ -1,0 +1,9 @@
+## Interface: 50300
+## Title: ZoneSpec
+## Notes: Saved talents and glyphs based on location.
+## Author: Gethe
+## Version: 1.0
+## SavedVariables: ZoneSpecDB
+## SavedVariablesPerCharacter: ZSChar
+
+ZoneSpec.lua
