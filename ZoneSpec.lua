@@ -1,7 +1,7 @@
 local NAME, ZoneSpec = ...
 local anchor = CreateFrame("Frame", "ZoneSpecAnchor", UIParent, "ChatConfigTabTemplate")
-local talentBox = CreateFrame("Frame")
-local glyphBox = CreateFrame("Frame")
+local talentBox = CreateFrame("Frame", nil, UIParent)
+local glyphBox = CreateFrame("Frame", nil, UIParent)
 local ZSVersion = 1.0
 
 local zone
@@ -46,7 +46,7 @@ local function Anchor_OnEnter(self)
 		--print("Config tooltip")
 		GameTooltip:ClearAllPoints()
 		GameTooltip:SetOwner(self, "ANCHOR_CURSOR", 0 ,0)
-		GameTooltip:SetText( 'Drag to move frame.\nUse "\\zs toggle" to lock placement.' )
+		GameTooltip:SetText( 'Drag to move frame.\nUse "\/zs toggle" to lock placement.' )
 		--print("Show tooltip")
 		GameTooltip:Show()
 	end
@@ -57,7 +57,6 @@ local function Anchor_OnLeave(self)
 end
 local function setAnchor()
 	--print("Apply anchor settings")
-	--anchor:SetSize(42, 42)
 	anchor:ClearAllPoints()
 	anchor:SetPoint(ZoneSpecDB.anchor, ZoneSpecDB.xOfs, ZoneSpecDB.yOfs)
 	anchor:SetFrameStrata("LOW")
@@ -72,7 +71,14 @@ local function setAnchor()
 			anchor:StartMoving()
 		end
 	end)
-	anchor:SetScript("OnDragStop", anchor.StopMovingOrSizing)
+	anchor:SetScript("OnDragStop", function() --anchor.StopMovingOrSizing)
+		anchor:StopMovingOrSizing()
+		local point, relativeTo, relativePoint, xOfs, yOfs = anchor:GetPoint()
+		--print(point, relativeTo, relativePoint, xOfs, yOfs)
+		ZoneSpecDB.anchor = point
+		ZoneSpecDB.xOfs = xOfs
+		ZoneSpecDB.yOfs = yOfs
+	end)
 	anchor:SetScript("OnHide", anchor.StopMovingOrSizing)
 	
 	-- Show a helper tooltip
@@ -94,6 +100,7 @@ local function createTextures()
 	for i = 1, 6 do
 		tex = talentBox:CreateTexture("ZSTalent"..i, "ARTWORK")
 		tex:SetSize(32, 32)
+
 		if i == 1 then
 			tex:SetPoint("TOPLEFT", "ZoneSpecAnchor", "BOTTOMLEFT", 3, -1)
 		else
@@ -104,6 +111,7 @@ local function createTextures()
 	for i = glyphStart, NUM_GLYPH_SLOTS, glyphIncr do
 		tex = glyphBox:CreateTexture("ZSGlyph"..i, "ARTWORK")
 		tex:SetSize(32, 32)
+
 		if i == glyphStart
 		then
 			tex:SetPoint("TOPLEFT", "ZSTalent1", "BOTTOMLEFT", 0, -1)
@@ -115,16 +123,17 @@ end
 
 local function createReagent()
 	--Reagent Texture
-	local frame = CreateFrame("Frame", "ZoneSpecReagent", UIParent) --, "InsetFrameTemplate3")
+	local frame = CreateFrame("Frame", "ZSReagent", UIParent)
 	frame:SetPoint("TOPRIGHT", ZoneSpecAnchor, "BOTTOMLEFT", 2, -1)
 	frame:SetSize(32, 32)
 
-	local texture = frame:CreateTexture("ZoneSpecReagentBG","BACKGROUND")
+	local texture = frame:CreateTexture(nil, "BACKGROUND")
 	texture:SetAllPoints(frame)
-	frame.texture = texture
+	frame.BG = texture
 
-	local text = frame:CreateFontString("ZoneSpecReagentText", "ARTWORK", "NumberFontNormal")
+	local text = frame:CreateFontString(nil, "ARTWORK", "NumberFontNormal")
 	text:SetPoint("BOTTOMRIGHT", -2. -2)
+	frame.Text = text
 
 	--frame:Show()
 end
@@ -302,13 +311,13 @@ function events:ADDON_LOADED(name)
 		--[[hooksecurefunc("PlayerTalentFrame_RefreshClearInfo", updateReagentShowfunction()
 			--print("Hooked: ClearInfo")
 			local _, count = GetTalentClearInfo()
-			ZoneSpecReagentText:SetText(count)
+			ZSReagent.Text:SetText(count)
 			if count <= 6 then
-				ZoneSpecReagent:Show()
-				ZoneSpecReagentText:Show()
+				ZSReagent:Show()
+				ZSReagent.Text:Show()
 			else
-				ZoneSpecReagent:Hide()
-				ZoneSpecReagentText:Hide()
+				ZSReagent:Hide()
+				ZSReagent.Text:Hide()
 			end
 		end)]]
 	end
@@ -316,15 +325,13 @@ end
 
 function events:BAG_UPDATE_DELAYED(...)
 	local name, count, icon = GetTalentClearInfo()
-	ZoneSpecReagentText:SetText(count)
+	ZSReagent.Text:SetText(count)
 	if count and count <= 6 then
-		ZoneSpecReagent:Show()
-		ZoneSpecReagentBG:SetTexture(icon)
-		ZoneSpecReagentText:SetText(count)
-		--ZoneSpecReagentText:Show()
+		ZSReagent:Show()
+		ZSReagent.BG:SetTexture(icon)
+		ZSReagent.Text:SetText(count)
 	else
-		ZoneSpecReagent:Hide()
-		--ZoneSpecReagentText:Hide()
+		ZSReagent:Hide()
 	end
 end
 
@@ -347,11 +354,11 @@ function SlashCmdList.ZONESPEC(msg, editBox)
 	if msg == "toggle" then
 		if ZoneSpecDB.isMovable then
 			ZoneSpecDB.isMovable = false
-			anchor:SetAlpha(0)
+			anchor:Hide()
 			--print("ZoneSpec is locked");
 		else
 			ZoneSpecDB.isMovable = true
-			anchor:SetAlpha(1)
+			anchor:Show()
 			--print("ZoneSpec is unlocked");
 		end
 	elseif msg == "clear" then
