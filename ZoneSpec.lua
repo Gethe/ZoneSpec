@@ -184,12 +184,12 @@ end
 
 function ZoneSpec:updateInfo()
 	--print("Do updates")
-	zone = GetMinimapZoneText()
+	zone = GetMinimapZoneText() --"The Lazy Turnip"
 	if not zone or zone == "" then return end
 	curSpec = GetSpecialization()
 
 	
-	--print("Update;  zone:", zone, "curSpec:", curSpec)
+	--print("Update;  zone:", zone, type(zone), "curSpec:", curSpec, type(curSpec))
 	if (ZSChar[curSpec][zone]) then
 		local zoneDB = ZSChar[curSpec][zone]
 		--print("Type:", type(ZSChar[curSpec][zone]), ";", zoneDB)
@@ -258,24 +258,12 @@ local function createSaveButton()
 	end)
 end
 
-function ZoneSpec:Init()
-	zone = GetMinimapZoneText()
-	curSpec = GetSpecialization()
-	--print("Init;  zone:", zone, "curSpec:", curSpec)
-	
-	--print("Create an anchor")
-	setAnchor()
-	createTextures()
-	createReagent()
-
-	ZoneSpec:updateInfo()
-end
-
 -- Event Functions
 local events = CreateFrame("Frame")
 
 events:RegisterEvent("ADDON_LOADED")
 events:RegisterEvent("BAG_UPDATE_DELAYED")
+events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 events:RegisterEvent("ZONE_CHANGED")
 events:RegisterEvent("ZONE_CHANGED_INDOORS")
@@ -299,31 +287,15 @@ function events:ADDON_LOADED(name)
 				--print("ZSChar:", ZSChar, "ZSChar[i]:", ZSChar[i])
 			end
 		end
-
-		--ZoneSpecDB.version = VERSION
-		--
-		--print("Initialize")
-		ZoneSpec:Init()
 	elseif name == "Blizzard_TalentUI" then
 		--print(name, "loaded")
 		self:UnregisterEvent("ADDON_LOADED")
 		createSaveButton()
-		--[[hooksecurefunc("PlayerTalentFrame_RefreshClearInfo", updateReagentShowfunction()
-			--print("Hooked: ClearInfo")
-			local _, count = GetTalentClearInfo()
-			ZSReagent.Text:SetText(count)
-			if count <= 6 then
-				ZSReagent:Show()
-				ZSReagent.Text:Show()
-			else
-				ZSReagent:Hide()
-				ZSReagent.Text:Hide()
-			end
-		end)]]
 	end
 end
 
 function events:BAG_UPDATE_DELAYED(...)
+	--print("BAG_UPDATE_DELAYED")
 	local name, count, icon = GetTalentClearInfo()
 	ZSReagent.Text:SetText(count)
 	if count and count <= 6 then
@@ -335,8 +307,24 @@ function events:BAG_UPDATE_DELAYED(...)
 	end
 end
 
+function events:PLAYER_LOGIN()
+	--print("PLAYER_LOGIN")
+	zone = GetMinimapZoneText()
+	curSpec = GetSpecialization()
+	--print("Init;  zone:", zone, "curSpec:", curSpec)
+	
+	--print("Create an anchor")
+	setAnchor()
+	--print("Create talent icons")
+	createTextures()
+	--print("Create reagent icon")
+	createReagent()
+
+	ZoneSpec:updateInfo()
+end
+
 events:SetScript("OnEvent", function(self, event, ...)
-	if (event == "ADDON_LOADED") or (event == "BAG_UPDATE_DELAYED") then
+	if (event == "ADDON_LOADED") or (event == "BAG_UPDATE_DELAYED") or (event == "PLAYER_LOGIN") then
 		--print(event, ";", ...)
 		events[event](self, ...)
 	else
@@ -364,14 +352,14 @@ function SlashCmdList.ZONESPEC(msg, editBox)
 	elseif msg == "clear" then
 		-- Clear the talent and glyph data for the current location.
 		ZSChar[curSpec][zone] = {}
-		--print("Data for", zone, "has been cleared.");
+		print("Data for", zone, "has been cleared.");
 	elseif msg == "debug" then
 		--print("defaults.isMovable:", defaults.isMovable);
 		--print("ZoneSpecDB.isMovable:", ZoneSpecDB.isMovable);
 	else
-		--print("Usage: /zs |cff22dd22command|r");
-		--print("|cff22dd22toggle|r - Show/Hide the anchor frame to move it or lock it in place.")
-		--print("|cff22dd22clear|r - Clear saved talents and glyphs for the current area.")
+		print("Usage: /zs |cff22dd22command|r");
+		print("|cff22dd22toggle|r - Show/Hide the anchor frame to move it or lock it in place.")
+		print("|cff22dd22clear|r - Clear saved talents and glyphs for the current area.")
 	end
 end
 
