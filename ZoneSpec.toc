@@ -2,7 +2,7 @@
 ## Title: ZoneSpec
 ## Notes: Saved talents and glyphs based on location.
 ## Author: Gethe
-## Version: 1.1
+## Version: 1.2
 ## SavedVariables: ZoneSpecDB
 ## SavedVariablesPerCharacter: ZSChar
 
