@@ -4,7 +4,7 @@ local talentBox = CreateFrame("Frame", nil, UIParent)
 local glyphBox = CreateFrame("Frame", nil, UIParent)
 local ZSVersion = 1.2
 
-local zone
+local zone --= "Zur Faulen Rübe" --"The Lazy Turnip" 
 local curSpec
 
 --Constants
@@ -184,12 +184,12 @@ end
 
 function ZoneSpec:updateInfo()
 	--print("Do updates")
-	zone = GetMinimapZoneText() --"The Lazy Turnip"
+	zone = GetMinimapZoneText()
 	if not zone or zone == "" then return end
 	curSpec = GetSpecialization()
 
 	
-	--print("Update;  zone:", zone, type(zone), "curSpec:", curSpec, type(curSpec))
+	--print("|cff22dd22ZS|r Update; ZSChar:", ZSChar, type(ZSChar), "curSpec:", curSpec, type(curSpec), "zone:", zone, type(zone))
 	if (ZSChar[curSpec][zone]) then
 		local zoneDB = ZSChar[curSpec][zone]
 		--print("Type:", type(ZSChar[curSpec][zone]), ";", zoneDB)
@@ -279,14 +279,6 @@ function events:ADDON_LOADED(name)
 		end
 		
 		ZSChar = ZSChar or {}
-		--print("ZSChar:", ZSChar, "ZSChar[1]:", ZSChar[1])
-		if not ZSChar[1] then
-			for i = 1, GetNumSpecializations() do
-				--print("ZSChar:", ZSChar, "i:", i)
-				ZSChar[i] = {}
-				--print("ZSChar:", ZSChar, "ZSChar[i]:", ZSChar[i])
-			end
-		end
 	elseif name == "Blizzard_TalentUI" then
 		--print(name, "loaded")
 		self:UnregisterEvent("ADDON_LOADED")
@@ -308,11 +300,18 @@ function events:BAG_UPDATE_DELAYED(...)
 end
 
 function events:PLAYER_LOGIN()
-	--print("PLAYER_LOGIN")
 	zone = GetMinimapZoneText()
 	curSpec = GetSpecialization()
-	--print("Init;  zone:", zone, "curSpec:", curSpec)
+	--print("|cff22dd22ZS|r PLAYER_LOGIN;  zone:", zone, "curSpec:", curSpec)
 	
+	--print("ZSChar:", ZSChar, "ZSChar[1]:", ZSChar[1])
+	if not ZSChar[1] then
+		for i = 1, GetNumSpecializations() do
+			--print("ZSChar:", ZSChar, "i:", i)
+			ZSChar[i] = {}
+			--print("ZSChar:", ZSChar, "ZSChar[i]:", ZSChar[i])
+		end
+	end
 	--print("Create an anchor")
 	setAnchor()
 	--print("Create talent icons")
@@ -329,7 +328,7 @@ events:SetScript("OnEvent", function(self, event, ...)
 		events[event](self, ...)
 	else
 		zone = GetMinimapZoneText()
-		--print(event, ";", zone, ";", ...)
+		--print("|cff22dd22ZS|r", event, ";", zone, ";", ...)
 		ZoneSpec:updateInfo()
 	end
 	--events[event](self, ...)
