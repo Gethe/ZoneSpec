@@ -2,7 +2,7 @@ local NAME, ZoneSpec = ...
 local anchor = CreateFrame("Frame", "ZoneSpecAnchor", UIParent, "ChatConfigTabTemplate")
 local talentBox = CreateFrame("Frame", nil, UIParent)
 local glyphBox = CreateFrame("Frame", nil, UIParent)
-local ZSVersion = 1.2
+local ZSVersion = 1.3
 
 local zone --= "Zur Faulen Rübe" --"The Lazy Turnip" 
 local curSpec
