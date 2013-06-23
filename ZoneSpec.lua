@@ -190,6 +190,7 @@ function ZoneSpec:updateInfo()
 
 	
 	--print("|cff22dd22ZS|r Update; ZSChar:", ZSChar, type(ZSChar), "curSpec:", curSpec, type(curSpec), "zone:", zone, type(zone))
+	--print("|cff22dd22ZS|r ", ZSChar[curSpec], type(ZSChar[curSpec]))
 	if (ZSChar[curSpec][zone]) then
 		local zoneDB = ZSChar[curSpec][zone]
 		--print("Type:", type(ZSChar[curSpec][zone]), ";", zoneDB)
@@ -242,6 +243,16 @@ function ZoneSpec:updateInfo()
 	end
 end
 
+function ZoneSpec:setZSChar(isReset)
+	--print("|cff22dd22ZS|r ZSChar:", ZSChar, "ZSChar[1]:", ZSChar[1])
+	if isReset or (not ZSChar[1]) then
+		for i = 1, GetNumSpecializations() do
+			--print("ZSChar:", ZSChar, "i:", i)
+			ZSChar[i] = {}
+			--print("ZSChar:", ZSChar, "ZSChar[i]:", ZSChar[i])
+		end
+	end
+end
 local function createSaveButton()
 	local btn = CreateFrame("Button", "ZoneSpecSaveButton", PlayerTalentFrame, "UIPanelButtonTemplate")
 	btn:SetPoint("BOTTOMRIGHT", -4, 4)
@@ -304,14 +315,8 @@ function events:PLAYER_LOGIN()
 	curSpec = GetSpecialization()
 	--print("|cff22dd22ZS|r PLAYER_LOGIN;  zone:", zone, "curSpec:", curSpec)
 	
-	--print("ZSChar:", ZSChar, "ZSChar[1]:", ZSChar[1])
-	if not ZSChar[1] then
-		for i = 1, GetNumSpecializations() do
-			--print("ZSChar:", ZSChar, "i:", i)
-			ZSChar[i] = {}
-			--print("ZSChar:", ZSChar, "ZSChar[i]:", ZSChar[i])
-		end
-	end
+	--print("Create character saved vars")
+	ZoneSpec:setZSChar()
 	--print("Create an anchor")
 	setAnchor()
 	--print("Create talent icons")
@@ -350,8 +355,13 @@ function SlashCmdList.ZONESPEC(msg, editBox)
 		end
 	elseif msg == "clear" then
 		-- Clear the talent and glyph data for the current location.
-		ZSChar[curSpec][zone] = {}
+		ZSChar[curSpec][zone] = nil
+		ZoneSpec:updateInfo()
 		print("Data for", zone, "has been cleared.");
+	elseif msg == "reset" then
+		--print("Reset character saved vars")
+		ZoneSpec:setZSChar(true)
+		print("Data for this character has been reset.");
 	elseif msg == "debug" then
 		--print("defaults.isMovable:", defaults.isMovable);
 		--print("ZoneSpecDB.isMovable:", ZoneSpecDB.isMovable);
@@ -359,6 +369,7 @@ function SlashCmdList.ZONESPEC(msg, editBox)
 		print("Usage: /zs |cff22dd22command|r");
 		print("|cff22dd22toggle|r - Show/Hide the anchor frame to move it or lock it in place.")
 		print("|cff22dd22clear|r - Clear saved talents and glyphs for the current area.")
+		print("|cff22dd22reset|r - Reset all data for the current character.")
 	end
 end
 
