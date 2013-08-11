@@ -1,5 +1,5 @@
 local NAME, ZoneSpec = ...
-local ZSVersion = 1.5
+local ZSVersion = GetAddOnMetadata(NAME, "Version") 
 
 local zone
 local curSpec
