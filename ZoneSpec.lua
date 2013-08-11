@@ -207,7 +207,7 @@ function ZoneSpec:UpdateInfo()
 		local zoneDB = ZSChar[curSpec][zone]
 		--print("Type:", type(ZSChar[curSpec][zone]), ";", zoneDB)
 		if zoneDB.talents[1] then
-			for i = 1, 6 do
+			for i = 1, GetMaxTalentTier() do
 				local _, talent = GetTalentRowSelectionInfo(i)
 				--print("Saved:", zoneDB.talents[i].selected, "Learned:", talent)
 				local tex = _G["ZSTalent"..i]
