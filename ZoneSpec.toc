@@ -1,8 +1,8 @@
-## Interface: 50300
+## Interface: 50400
 ## Title: |cff22dd22ZoneSpec|r
 ## Notes: Saved talents and glyphs based on location.
 ## Author: Gethe
-## Version: 1.7
+## Version: 1.8
 ## SavedVariables: ZoneSpecDB
 ## SavedVariablesPerCharacter: ZSChar
 
