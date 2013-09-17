@@ -277,7 +277,7 @@ function events:ADDON_LOADED(name)
 		--print(name, "loaded")
 
 		ZoneSpecDB = ZoneSpecDB or defaults
-		if ZoneSpecDB.version < 1.5 then
+		if tonumber(ZoneSpecDB.version) < 1.5 then
 			ZoneSpecDB.point = ZoneSpecDB.anchor
 			ZoneSpecDB.anchor = nil
 			ZoneSpecDB.version = ZSVersion
