@@ -6,4 +6,4 @@
 ## SavedVariables: ZoneSpecDB
 ## SavedVariablesPerCharacter: ZSChar
 
-ZoneSpec.lua
+ZoneSpec.xml
