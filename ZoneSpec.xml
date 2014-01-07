@@ -2,4 +2,44 @@
 ..\..\FrameXML\UI.xsd">
 	<Script file="ZoneSpec.lua"/>
 
+	<Button name="ZSIconTemplate" virtual="true">
+		<Size x="32" y="32" />
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="icon" setAllPoints="true" file="Interface\Icons\INV_Misc_QuestionMark">
+				</Texture>
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnEnter>
+			</OnEnter>
+			<OnLeave>
+			</OnLeave>
+		</Scripts>
+	</Button>
+
+	<Frame name="ZSFrame" parent="UIParent" inherits="BaseBasicFrameTemplate">
+		<Size x="300" y="100" />
+ 		<Anchors>
+			<Anchor point="CENTER" />
+		</Anchors>
+<!-- 
+-->
+		<Frames>
+			<Button parentKey="anchor" inherits="ChatConfigTabTemplate">
+				<Size x="300" y="300" />
+				<Anchors>
+					<Anchor point="TOPLEFT" x="0" y="0" />
+				</Anchors>
+			</Button>
+			<Button parentKey="talent1" inherits="ZSIconTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.anchor" relativePoint="BOTTOMLEFT" x="0" y="0" />
+				</Anchors>
+			</Button>
+		</Frames>
+		<Scripts>
+			<OnLoad function="ZoneSpec_OnLoad" />
+		</Scripts>
+	</Frame>
 </Ui>
