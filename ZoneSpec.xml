@@ -34,10 +34,10 @@
 		</Scripts>
 	</Button>
 
-	<Frame name="ZSFrame" parent="UIParent" moveable="true" enablemouse="true">
+	<Frame name="ZSFrame" parent="UIParent" movable="true" enablemouse="true">
 		<Size x="200" y="64" />
 		<Frames>
-			<Button parentKey="anchor" hidden="false" inherits="ChatConfigTabTemplate">
+			<Button parentKey="anchor" inherits="ChatConfigTabTemplate">
 			</Button>
 
 		<!-- Talent Icons -->
@@ -90,7 +90,7 @@
 			</Button>
 
 		<!-- Reagent Counter -->
-			<Button parentKey="reagent" inherits="ZSIconTemplate">
+			<Button parentKey="reagent" hidden="true" inherits="ZSIconTemplate">
 				<Anchors>
 					<Anchor point="TOPRIGHT" relativeKey="$parent.talent1" relativePoint="TOPLEFT" x="-1" y="0" />
 				</Anchors>
@@ -100,33 +100,6 @@
 		</Frames>
 		<Scripts>
 			<OnLoad function="ZoneSpec_OnLoad" />
-			<OnEnter>
-				print(ZoneSpec.db.isMovable)
-				if ZoneSpec.db.isMovable then
-					--printDebug("Config tooltip")
-					GameTooltip:ClearAllPoints()
-					GameTooltip:SetOwner(self, "ANCHOR_CURSOR", 0 ,0)
-					GameTooltip:SetText( 'Drag to move frame.\nUse "\/zs toggle" to lock placement.' )
-					--printDebug("Show tooltip")
-					GameTooltip:Show()
-				end
-			</OnEnter>
-			<OnLeave>
-				GameTooltip:Hide()
-			</OnLeave>
-			<OnDragStart>
-				if ZoneSpec.db.isMovable then
-					self:StartMoving()
-				end
-			</OnDragStart>
-			<OnDragStop>
-				self:StopMovingOrSizing()
-				local point, relativeTo, relativePoint, xOfs, yOfs = self:GetPoint()
-				--printDebug(point, relativeTo, relativePoint, xOfs, yOfs)
-				ZoneSpec.db.point = point
-				ZoneSpec.db.xOfs = xOfs
-				ZoneSpec.db.yOfs = yOfs
-			</OnDragStop>
 		</Scripts>
 	</Frame>
 </Ui>
