@@ -3,7 +3,7 @@ ZoneSpec = db
 
 local ZSVersion = tonumber(GetAddOnMetadata(NAME, "Version"))
 
-local zone
+local curZone
 local curSpec
 
 --Constants
@@ -24,7 +24,7 @@ local defaults = {
 --[[
 ZSChar = {
     { -- first spec
-        [zone] = { --This will be the zone name
+        [curZone] = { --This will be the curZone name
             ["talents"] = {
                 {
                     ["selected"] = 2,
@@ -49,8 +49,8 @@ function ZoneSpec:CreateSaveButton()
     btn:SetText(SAVE)
 
     btn:SetScript("OnClick", function()
-        if not ZSChar[curSpec][zone] then
-            ZSChar[curSpec][zone] = {}
+        if not ZSChar[curSpec][curZone] then
+            ZSChar[curSpec][curZone] = {}
         end
 
         local talents = {}
@@ -65,7 +65,7 @@ function ZoneSpec:CreateSaveButton()
                 }
             end
         end
-        ZSChar[curSpec][zone]["talents"] = talents
+        ZSChar[curSpec][curZone]["talents"] = talents
 
         --[[  Glyph layout
            2
@@ -84,10 +84,10 @@ function ZoneSpec:CreateSaveButton()
                 spell = glyphSpell,
             }
         end
-        ZSChar[curSpec][zone]["glyphs"] = glyphs
+        ZSChar[curSpec][curZone]["glyphs"] = glyphs
 
         self:UpdateIcons()
-        print("|cff22dd22ZoneSpec|r: Talent and Glyph data has been saved for", zone, ".")
+        print("|cff22dd22ZoneSpec|r: Talent and Glyph data has been saved for", curZone, ".")
     end)
     hooksecurefunc("PlayerTalentFrameActivateButton_Update", function(numTalentGroups)
         local activeTalentGroup = "spec"..GetActiveSpecGroup()
@@ -101,7 +101,7 @@ end
 
 function ZoneSpec:showTalents(show, maxTalents)
     for i = 1, MAX_NUM_TALENT_TIERS do
-        printDebug("talent"..i)
+        --printDebug("talent"..i)
         self.frame["talent"..i]:Hide()
     end
     if show then 
@@ -113,7 +113,7 @@ end
 
 function ZoneSpec:showGlyphs(show)
     for i = glyphStart, NUM_GLYPH_SLOTS, glyphIncr do
-        printDebug("glyph"..i)
+        --printDebug("glyph"..i)
         self.frame["glyph"..i]:Hide()
     end
     if show then 
@@ -125,7 +125,7 @@ end
 
 function ZoneSpec:UpdateIcons()
     maxTalents = GetMaxTalentTier()
-    -- printDebug("UpdateIcons;", zone, curSpec)
+    -- printDebug("UpdateIcons;", curZone, curSpec)
 
     if (not curSpec) or (maxTalents == 0) then 
         -- printDebug("UpdateIcons;", "nope")
@@ -136,10 +136,12 @@ function ZoneSpec:UpdateIcons()
 
     local talentsShown = false
     local glyphsShown = false
-    local spec = ZSChar[curSpec] --or false
+    local zone = ZSChar[curSpec][curZone] --or false
 
-    if (not ZSChar[curSpec][zone].talents[i]) or (not ZSChar[curSpec][zone].glyphs[i]) then
-        ZSChar[curSpec][zone] = nil
+    if zone then
+        if (not zone.talents[1]) or (not zone.glyphs[1]) then
+            zone = nil
+        end
     end
 
     --show when new talent tier is available
@@ -147,14 +149,18 @@ function ZoneSpec:UpdateIcons()
         local _, talent = GetTalentRowSelectionInfo(i)
         local icon = self.frame["talent"..i]
         icon:Show()
-        if (not spec[zone]) or (spec[zone].talents[i].selected == talent) then
+        if (not zone) or (zone.talents[i].selected == talent) then
             --set the ID for the tooltip
             icon.ID = talent
-            icon.texture:SetTexture(select(2, GetTalentInfo(talent)))
+            if talent then
+                icon.texture:SetTexture(select(2, GetTalentInfo(talent)))
+            else
+                icon.texture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+            end
             icon.texture:SetDesaturated(1)
         else
-            icon.ID = spec[zone].talents[i].selected
-            icon.texture:SetTexture(spec[zone].talents[i].icon)
+            icon.ID = zone.talents[i].selected
+            icon.texture:SetTexture(zone.talents[i].icon)
             icon.texture:SetDesaturated(0)
             talentsShown = true
         end
@@ -162,17 +168,17 @@ function ZoneSpec:UpdateIcons()
 
     for i = glyphStart, NUM_GLYPH_SLOTS, glyphIncr do
         local _, glyphType, _, glyphSpell, path = GetGlyphSocketInfo(i)
-        -- printDebug("spell:", spec[zone].glyphs[i].spell, "glyphSpell:", glyphSpell)
+        -- printDebug("spell:", zone.glyphs[i].spell, "glyphSpell:", glyphSpell)
         local icon = self.frame["glyph"..i]
         icon:Show()
-        if (not spec[zone]) or (spec[zone].glyphs[i].spell == glyphSpell) then
+        if (not zone) or (zone.glyphs[i].spell == glyphSpell) then
             --set the ID for the tooltip
             icon.spellID = glyphSpell
             icon.texture:SetTexture(path)
             icon.texture:SetDesaturated(1)
         else
-            icon.spellID = spec[zone].glyphs[i].spell
-            icon.texture:SetTexture(spec[zone].glyphs[i].icon)
+            icon.spellID = zone.glyphs[i].spell
+            icon.texture:SetTexture(zone.glyphs[i].icon)
             icon.texture:SetDesaturated(0)
             glyphsShown = true
         end
@@ -231,9 +237,9 @@ function ZoneSpec:OnEvent(frame, event, ...)
             frame.reagent:Hide()
         end
     elseif (event == "PLAYER_LOGIN") then
-        zone = GetMinimapZoneText()
+        curZone = GetMinimapZoneText()
         curSpec = GetSpecialization()
-        -- printDebug("PLAYER_LOGIN;", "zone:", zone, "curSpec:", curSpec)
+        -- printDebug("PLAYER_LOGIN;", "curZone:", curZone, "curSpec:", curSpec)
         
         -- printDebug("Create character saved vars")
         self:SetZSChar()
@@ -245,9 +251,9 @@ function ZoneSpec:OnEvent(frame, event, ...)
             frame.reagent:Show()
         end
     else
-        zone = GetMinimapZoneText()
+        curZone = GetMinimapZoneText()
         curSpec = GetSpecialization()
-        -- printDebug(event, ";", zone, ";", ...)
+        -- printDebug(event, ";", curZone, ";", ...)
         self:UpdateIcons()
     end
     --self[event](frame, ...)
@@ -329,9 +335,9 @@ function SlashCmdList.ZONESPEC(msg, editBox)
         end
     elseif msg == "clear" then
         -- Clear the talent and glyph data for the current location.
-        ZSChar[curSpec][zone] = nil
+        ZSChar[curSpec][curZone] = nil
         ZoneSpec:UpdateIcons()
-        print("|cff22dd22ZoneSpec|r: Data for", zone, "has been cleared.");
+        print("|cff22dd22ZoneSpec|r: Data for", curZone, "has been cleared.");
     elseif msg == "reset" then
         -- printDebug("Reset character saved vars")
         ZoneSpec:SetZSChar(true)

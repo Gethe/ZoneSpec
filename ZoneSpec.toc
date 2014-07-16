@@ -2,7 +2,7 @@
 ## Title: |cff22dd22ZoneSpec|r
 ## Notes: Saved talents and glyphs based on location.
 ## Author: Gethe
-## Version: 1.8
+## Version: v1.0.9
 ## SavedVariables: ZoneSpecDB
 ## SavedVariablesPerCharacter: ZSChar
 
