@@ -208,16 +208,7 @@ function ZoneSpec:OnEvent(frame, event, ...)
         name = ...
         if name == NAME then
             -- printDebug(name, "loaded")
-
             ZoneSpecDB = ZoneSpecDB or defaults
-            if tonumber(ZoneSpecDB.version) < 1.5 then
-                ZoneSpecDB.point = ZoneSpecDB.anchor
-                ZoneSpecDB.anchor = nil
-                ZoneSpecDB.version = ZSVersion
-            else
-                ZoneSpecDB.version = ZSVersion
-            end
-            
             ZSChar = ZSChar or {}
             frame:SetPoint(ZoneSpecDB.point, ZoneSpecDB.xOfs, ZoneSpecDB.yOfs)
         elseif name == "Blizzard_TalentUI" then
