@@ -1,2 +1,2 @@
 ignore:
-    - /ZoneSpec.sublime-workspace
+    - ZoneSpec.sublime-project
