@@ -2,13 +2,22 @@
 ..\..\FrameXML\UI.xsd">
 	<Script file="ZoneSpec.lua"/>
 
-	<Button name="ZSIconTemplate" virtual="true">
+	<Button name="ZSIconTemplate" virtual="true" hidden="true">
 		<Size x="32" y="32" />
 		<Layers>
 			<Layer level="BACKGROUND">
 				<Texture parentKey="texture" setAllPoints="true" file="Interface\Icons\INV_Misc_QuestionMark">
+					<TexCoords left="0.02" right="0.98" top="0.02" bottom="0.98"/>
 				</Texture>
 			</Layer>
+			<Layer level="ARTWORK">
+				<Texture parentKey="check" atlas="Tracker-Check" useAtlasSize="true" hidden="true">
+					<Size x="16" y="16"/>
+					<Anchors>
+						<Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+					</Anchors>
+				</Texture>
+			</Layer>	
 		</Layers>
 		<Scripts>
 			<OnEnter>
@@ -19,9 +28,9 @@
 						GameTooltip:AddLine(self.extraTooltip);
 					end
 					GameTooltip:Show();
-				elseif ( self.ID ) then
+				elseif ( self.id ) then
 					GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-					GameTooltip:SetTalent(self.ID);
+					GameTooltip:SetTalent(self.id);
 					if ( self.extraTooltip ) then
 						GameTooltip:AddLine(self.extraTooltip);
 					end
@@ -38,54 +47,57 @@
 		<Size x="200" y="64" />
 		<Frames>
 			<Button parentKey="anchor" inherits="ChatConfigTabTemplate">
+				<Scripts>
+					<OnEnter>
+				        --ZoneSpec:printDebug("OnEnter: Anchor")
+				        if ZoneSpecDB and ZoneSpecDB.isMovable then
+				            --ZoneSpec:printDebug("Config tooltip")
+				            GameTooltip:ClearAllPoints()
+				            GameTooltip:SetOwner(self, "ANCHOR_CURSOR", 0 ,0)
+				            GameTooltip:SetText( 'Drag to move frame.\nUse "\/zs toggle" to lock placement.' )
+				            --ZoneSpec:printDebug("Show tooltip")
+				            GameTooltip:Show()
+				        end
+					</OnEnter>
+					<OnLeave>
+				        --ZoneSpec:printDebug("OnLeave: Anchor")
+				        GameTooltip:Hide()
+					</OnLeave>
+					<OnMouseDown>
+				        if ZoneSpecDB and ZoneSpecDB.isMovable then
+				            self:GetParent():StartMoving()
+				        end
+					</OnMouseDown>
+					<OnMouseUp>
+				        self:GetParent():StopMovingOrSizing()
+				        local point, relativeTo, relativePoint, xOfs, yOfs = self:GetParent():GetPoint()
+				        -- ZoneSpec:printDebug(point, relativeTo, relativePoint, xOfs, yOfs)
+				        ZoneSpecDB.point = point
+				        ZoneSpecDB.xOfs = xOfs
+				        ZoneSpecDB.yOfs = yOfs
+					</OnMouseUp>
+					<OnHide>
+				        self:GetParent():StopMovingOrSizing()
+					</OnHide>
+				</Scripts>
 			</Button>
 
 		<!-- Talent Icons -->
-			<Button parentKey="talent1" inherits="ZSIconTemplate">
+			<Button parentKey="talent1" inherits="ZSIconTemplate" parentArray="talents">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeKey="$parent.anchor" relativePoint="BOTTOMLEFT" x="4" y="-1" />
 				</Anchors>
 			</Button>
-			<Button parentKey="talent2" inherits="ZSIconTemplate">
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.talent1" relativePoint="TOPRIGHT" x="1" y="0" />
-				</Anchors>
-			</Button>
-			<Button parentKey="talent3" inherits="ZSIconTemplate">
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.talent2" relativePoint="TOPRIGHT" x="1" y="0" />
-				</Anchors>
-			</Button>
-			<Button parentKey="talent4" inherits="ZSIconTemplate">
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.talent3" relativePoint="TOPRIGHT" x="1" y="0" />
-				</Anchors>
-			</Button>
-			<Button parentKey="talent5" inherits="ZSIconTemplate">
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.talent4" relativePoint="TOPRIGHT" x="1" y="0" />
-				</Anchors>
-			</Button>
-			<Button parentKey="talent6" inherits="ZSIconTemplate">
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.talent5" relativePoint="TOPRIGHT" x="1" y="0" />
-				</Anchors>
-			</Button>
 
 		<!-- Glyph Icons -->
-			<Button parentKey="glyph2" inherits="ZSIconTemplate">
+			<Button parentKey="glyph1" inherits="ZSIconTemplate" parentArray="glyphs">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeKey="$parent.talent1" relativePoint="BOTTOMLEFT" x="0" y="-1" />
 				</Anchors>
 			</Button>
-			<Button parentKey="glyph4" inherits="ZSIconTemplate">
+			<Button parentKey="glyph2" inherits="ZSIconTemplate" parentArray="glyphs">
 				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.glyph2" relativePoint="TOPRIGHT" x="1" y="0" />
-				</Anchors>
-			</Button>
-			<Button parentKey="glyph6" inherits="ZSIconTemplate">
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.glyph4" relativePoint="TOPRIGHT" x="1" y="0" />
+					<Anchor point="TOPLEFT" relativeKey="$parent.talent1" relativePoint="BOTTOMLEFT" x="0" y="-1" />
 				</Anchors>
 			</Button>
 
@@ -100,6 +112,9 @@
 		</Frames>
 		<Scripts>
 			<OnLoad function="ZoneSpec_OnLoad" />
+			<OnEvent>
+				ZoneSpec:OnEvent(self, event, ...)
+			</OnEvent>
 		</Scripts>
 	</Frame>
 </Ui>

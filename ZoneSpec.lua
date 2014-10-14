@@ -2,12 +2,11 @@ local NAME, db = ...
 ZoneSpec = db
 
 local ZSVersion = tonumber(GetAddOnMetadata(NAME, "Version"))
+local debug = false
 
 local curZone
 local curSpec
-
---Constants
-local TOTAL_NUM_TALENTS = GetNumTalents()
+local maxTalents
 
 local glyphIncr = 2
 local glyphStart = 2
@@ -27,7 +26,7 @@ ZSChar = {
         [curZone] = { --This will be the curZone name
             ["talents"] = {
                 {
-                    ["selected"] = 2,
+                    ["id"] = talentID,
                     ["icon"] = "icon\\path"
                 }, -- ["1"]
             },
@@ -38,8 +37,10 @@ ZSChar = {
     },
 }
 ]]
-local function printDebug(...)
-    print("|cff22dd22ZS|r", ...)
+function ZoneSpec:printDebug(...)
+    if debug then
+        print("|cff22dd22ZS|r: ", ...)
+    end
 end
 
 function ZoneSpec:CreateSaveButton()
@@ -53,16 +54,19 @@ function ZoneSpec:CreateSaveButton()
             ZSChar[curSpec][curZone] = {}
         end
 
+        -- ZoneSpec:printDebug("Save the current talent config")
         local talents = {}
-        -- printDebug("Save the current talent config")
-        for i = 1, TOTAL_NUM_TALENTS do
-            local name, texture, tier, _, selected = GetTalentInfo(i)
-            if selected then
-                -- printDebug("Talent", i, "; Texture:", texture) --ZSChar
-                talents[tier] = {
-                    selected = i,
-                    icon = texture,
-                }
+        local activeSpec = GetActiveSpecGroup()
+        for tier = 1, MAX_TALENT_TIERS do
+            for column = 1, NUM_TALENT_COLUMNS do
+                local id, name, texture, selected = GetTalentInfo(tier, column, activeSpec)
+                if selected then
+                    -- ZoneSpec:printDebug("Talent", i, "; Texture:", texture) --ZSChar
+                    talents[tier] = {
+                        id = id,
+                        texture = texture,
+                    }
+                end
             end
         end
         ZSChar[curSpec][curZone]["talents"] = talents
@@ -74,10 +78,10 @@ function ZoneSpec:CreateSaveButton()
         ]]
 
         local glyphs = {}
-        -- printDebug("Save the current glyph config")
+        -- ZoneSpec:printDebug("Save the current glyph config")
         for i = 1, NUM_GLYPH_SLOTS do
             local _, glyphType, _, glyphSpell, texture = GetGlyphSocketInfo(i)
-            -- printDebug("Glyph:", i, "; Texture:", texture) --ZSChar
+            -- ZoneSpec:printDebug("Glyph:", i, "; Texture:", texture) --ZSChar
             glyphs[i] = {
                 glyphType = glyphType,
                 icon = texture,
@@ -87,11 +91,11 @@ function ZoneSpec:CreateSaveButton()
         ZSChar[curSpec][curZone]["glyphs"] = glyphs
 
         self:UpdateIcons()
-        print("|cff22dd22ZoneSpec|r: Talent and Glyph data has been saved for", curZone, ".")
+        ZoneSpec:printDebug("Talent and Glyph data has been saved for", curZone, ".")
     end)
     hooksecurefunc("PlayerTalentFrameActivateButton_Update", function(numTalentGroups)
-        local activeTalentGroup = "spec"..GetActiveSpecGroup()
-        if (activeTalentGroup == PlayerTalentFrame.selectedPlayerSpec) then
+        local activeSpec = "spec"..GetActiveSpecGroup()
+        if (activeSpec == PlayerTalentFrame.selectedPlayerSpec) then
             btn:Show()
         else
             btn:Hide()
@@ -99,36 +103,38 @@ function ZoneSpec:CreateSaveButton()
     end)
 end
 
-function ZoneSpec:showTalents(show, maxTalents)
-    for i = 1, MAX_NUM_TALENT_TIERS do
-        --printDebug("talent"..i)
-        self.frame["talent"..i]:Hide()
+function ZoneSpec:showTalents(show)
+    local numTalents = #self.frame.talents
+    for i = 1, numTalents do
+        --ZoneSpec:printDebug("talent"..i)
+        self.frame.talents[i]:Hide()
     end
     if show then 
-        for i = 1, (maxTalents or MAX_NUM_TALENT_TIERS) do
-            self.frame["talent"..i]:Show()
+        for i = 1, numTalents do
+            self.frame.talents[i]:Show()
         end
     end
 end
 
 function ZoneSpec:showGlyphs(show)
-    for i = glyphStart, NUM_GLYPH_SLOTS, glyphIncr do
-        --printDebug("glyph"..i)
-        self.frame["glyph"..i]:Hide()
+    local numGlyphs = (#self.frame.glyphs - 1) * 2
+    for i = glyphStart, numGlyphs, glyphIncr do
+        --ZoneSpec:printDebug("showGlyphs", self.frame.glyphs, i)
+        self.frame.glyphs[i]:Hide()
     end
     if show then 
-        for i = glyphStart, NUM_GLYPH_SLOTS, glyphIncr do
-            self.frame["glyph"..i]:Show()
+        for i = glyphStart, numGlyphs, glyphIncr do
+            self.frame.glyphs[i]:Show()
         end
     end
 end
 
 function ZoneSpec:UpdateIcons()
     maxTalents = GetMaxTalentTier()
-    -- printDebug("UpdateIcons;", curZone, curSpec)
+    -- ZoneSpec:printDebug("UpdateIcons;", curZone, curSpec)
 
     if (not curSpec) or (maxTalents == 0) then 
-        -- printDebug("UpdateIcons;", "nope")
+        -- ZoneSpec:printDebug("UpdateIcons;", "nope")
         self:showTalents((ZoneSpecDB.isMovable) or (talentsShown))
         self:showGlyphs((ZoneSpecDB.isMovable) or (glyphsShown))
         return
@@ -145,94 +151,117 @@ function ZoneSpec:UpdateIcons()
     end
 
     --show when new talent tier is available
-    for i = 1, maxTalents do
-        local _, talent = GetTalentRowSelectionInfo(i)
-        local icon = self.frame["talent"..i]
-        icon:Show()
-        if (not zone) or (zone.talents[i].selected == talent) then
-            --set the ID for the tooltip
-            icon.ID = talent
-            if talent then
-                icon.texture:SetTexture(select(2, GetTalentInfo(talent)))
-            else
-                icon.texture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+    local activeSpec = GetActiveSpecGroup()
+    local talents = self.frame.talents
+    for row = 1, maxTalents do
+        for column = 1, NUM_TALENT_COLUMNS do
+            local id, _, texture, selected = GetTalentInfo(row, column, activeSpec)
+            if not talents[row] then
+                --ZoneSpec:printDebug("create talent", row)
+                talents[row] = CreateFrame("Button", nil, self.frame, "ZSIconTemplate")
+                talents[row]:SetPoint("TOPLEFT", talents[row-1], "TOPRIGHT", 1, 0)
             end
-            icon.texture:SetDesaturated(1)
-        else
-            icon.ID = zone.talents[i].selected
-            icon.texture:SetTexture(zone.talents[i].icon)
-            icon.texture:SetDesaturated(0)
-            talentsShown = true
+            --ZoneSpec:printDebug("Row:", row, "Saved:", zone and zone.talents[row].id, "Equipped:", id)
+            if (not zone) or (selected and zone.talents[row].id == id) then
+                --Set current talent to button
+                talents[row].id = id
+                talents[row].texture:SetDesaturated(true)
+                talents[row].texture:SetTexture(texture)
+                talents[row].check:Show()
+                --talentsShown = false
+                break
+            elseif (not selected and zone.talents[row].id == id) then
+                --Set saved talent to button
+                talents[row].id = zone.talents[row].id
+                talents[row].texture:SetTexture(zone.talents[row].texture)
+                talents[row].texture:SetDesaturated(false)
+                talents[row].check:Hide()
+                talentsShown = true
+                break
+            else
+                --ZoneSpec:printDebug("What?", row)
+            end
         end
     end
 
+    local glyphs = self.frame.glyphs
     for i = glyphStart, NUM_GLYPH_SLOTS, glyphIncr do
-        local _, glyphType, _, glyphSpell, path = GetGlyphSocketInfo(i)
-        -- printDebug("spell:", zone.glyphs[i].spell, "glyphSpell:", glyphSpell)
-        local icon = self.frame["glyph"..i]
-        icon:Show()
-        if (not zone) or (zone.glyphs[i].spell == glyphSpell) then
-            --set the ID for the tooltip
-            icon.spellID = glyphSpell
-            icon.texture:SetTexture(path)
-            icon.texture:SetDesaturated(1)
-        else
-            icon.spellID = zone.glyphs[i].spell
-            icon.texture:SetTexture(zone.glyphs[i].icon)
-            icon.texture:SetDesaturated(0)
-            glyphsShown = true
+        local enabled, glyphType, _, glyphSpell, path = GetGlyphSocketInfo(i)
+        if enabled then
+            if not glyphs[i] then
+                --ZoneSpec:printDebug("create glyph", i)
+                glyphs[i] = CreateFrame("Button", nil, self.frame, "ZSIconTemplate")
+                glyphs[i]:SetPoint("TOPLEFT", glyphs[i-2], "TOPRIGHT", 1, 0)
+            end
+            --ZoneSpec:printDebug("Slot:", i, "Saved:", zone and zone.glyphs[i].spell, "Equipped:", glyphSpell)
+            if (not zone) or (zone.glyphs[i].spell == glyphSpell) then
+                --Set current glyph to button
+                glyphs[i].spellID = glyphSpell
+                glyphs[i].texture:SetTexture(path or [[Interface\Icons\INV_Misc_QuestionMark]])
+                glyphs[i].texture:SetDesaturated(true)
+                glyphs[i].check:Show()
+                --glyphsShown = false
+            else
+                --Set saved glyph to button
+                glyphs[i].spellID = zone.glyphs[i].spell
+                glyphs[i].texture:SetTexture(zone.glyphs[i].icon)
+                glyphs[i].texture:SetDesaturated(false)
+                glyphs[i].check:Hide()
+                glyphsShown = true
+            end
         end
     end
 
-    -- printDebug("UpdateIcons;", "Show or Hide")
-    self:showTalents((ZoneSpecDB.isMovable) or (talentsShown), maxTalents)
+    -- ZoneSpec:printDebug("UpdateIcons;", "Show or Hide")
+    self:showTalents((ZoneSpecDB.isMovable) or (talentsShown))
     self:showGlyphs((ZoneSpecDB.isMovable) or (glyphsShown))
 end
 
 function ZoneSpec:SetZSChar(isReset)
-    -- printDebug("|cff22dd22ZS|r ZSChar:", ZSChar, "ZSChar[1]:", ZSChar[1])
+    -- ZoneSpec:printDebug("|cff22dd22ZS|r ZSChar:", ZSChar, "ZSChar[1]:", ZSChar[1])
     if isReset or (not ZSChar[1]) then
         for i = 1, GetNumSpecializations() do
-            -- printDebug("ZSChar:", ZSChar, "i:", i)
+            -- ZoneSpec:printDebug("ZSChar:", ZSChar, "i:", i)
             ZSChar[i] = {}
-            -- printDebug("ZSChar:", ZSChar, "ZSChar[i]:", ZSChar[i])
+            -- ZoneSpec:printDebug("ZSChar:", ZSChar, "ZSChar[i]:", ZSChar[i])
         end
     end
 end
 
 
-
+---------------------------------
 function ZoneSpec:OnEvent(frame, event, ...)
-    -- printDebug("Event", event)
+    --ZoneSpec:printDebug("Event", event)
     if (event == "ADDON_LOADED") then
-        name = ...
+        local name = ...
         if name == NAME then
-            -- printDebug(name, "loaded")
+            -- ZoneSpec:printDebug(name, "loaded")
             ZoneSpecDB = ZoneSpecDB or defaults
             ZSChar = ZSChar or {}
             frame:SetPoint(ZoneSpecDB.point, ZoneSpecDB.xOfs, ZoneSpecDB.yOfs)
         elseif name == "Blizzard_TalentUI" then
-            -- printDebug(name, "loaded")
+            -- ZoneSpec:printDebug(name, "loaded")
             frame:UnregisterEvent("ADDON_LOADED")
             self:CreateSaveButton()
         end
     elseif (event == "BAG_UPDATE_DELAYED") then
-        local name, count, icon = GetTalentClearInfo()
+        local name, count, icon, id = GetTalentClearInfo()
         --frame.reagent.text:SetText(count)
         if (ZoneSpecDB.isMovable) or (count and count <= 6) then
             frame.reagent:Show()
-            -- printDebug(frame.texture:GetTexture())
+            -- ZoneSpec:printDebug(frame.texture:GetTexture())
             frame.reagent.texture:SetTexture(icon or "Interface\\Icons\\INV_Misc_Dust_02")
             frame.reagent.text:SetText(count or 0)
+            frame.reagent.spellID = id
         else
             frame.reagent:Hide()
         end
     elseif (event == "PLAYER_LOGIN") then
         curZone = GetMinimapZoneText()
         curSpec = GetSpecialization()
-        -- printDebug("PLAYER_LOGIN;", "curZone:", curZone, "curSpec:", curSpec)
+        -- ZoneSpec:printDebug("PLAYER_LOGIN;", "curZone:", curZone, "curSpec:", curSpec)
         
-        -- printDebug("Create character saved vars")
+        -- ZoneSpec:printDebug("Create character saved vars")
         self:SetZSChar()
 
         self:UpdateIcons()
@@ -244,15 +273,14 @@ function ZoneSpec:OnEvent(frame, event, ...)
     else
         curZone = GetMinimapZoneText()
         curSpec = GetSpecialization()
-        -- printDebug(event, ";", curZone, ";", ...)
+        -- ZoneSpec:printDebug(event, ";", curZone, ";", ...)
         self:UpdateIcons()
     end
     --self[event](frame, ...)
 end
 
 function ZoneSpec_OnLoad(self)
-    -- printDebug("Load")
-
+    -- ZoneSpec:printDebug("Load")
     self.anchor:ClearAllPoints()
     self.anchor:SetPoint("TOPLEFT", 0, 0)
 
@@ -266,63 +294,26 @@ function ZoneSpec_OnLoad(self)
     self:RegisterEvent("ZONE_CHANGED_INDOORS")
     self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
-
-    self:SetScript("OnEvent", function(self, event, ...)
-        ZoneSpec:OnEvent(self, event, ...)
-    end)
-
-    self.anchor:SetScript("OnEnter", function(self, motion)
-        -- printDebug("OnEnter: Anchor")
-        if ZoneSpecDB and ZoneSpecDB.isMovable then
-            -- printDebug("Config tooltip")
-            GameTooltip:ClearAllPoints()
-            GameTooltip:SetOwner(self, "ANCHOR_CURSOR", 0 ,0)
-            GameTooltip:SetText( 'Drag to move frame.\nUse "\/zs toggle" to lock placement.' )
-            -- printDebug("Show tooltip")
-            GameTooltip:Show()
-        end
-    end)
-    self.anchor:SetScript("OnLeave", function(self, motion)
-        -- printDebug("OnLeave: Anchor")
-        GameTooltip:Hide()
-    end)
-    self.anchor:SetScript("OnMouseDown", function(self, button)
-        if ZoneSpecDB and ZoneSpecDB.isMovable then
-            self:GetParent():StartMoving()
-        end
-    end)
-    self.anchor:SetScript("OnMouseUp", function(self)
-        self:GetParent():StopMovingOrSizing()
-        local point, relativeTo, relativePoint, xOfs, yOfs = self:GetParent():GetPoint()
-        -- printDebug(point, relativeTo, relativePoint, xOfs, yOfs)
-        ZoneSpecDB.point = point
-        ZoneSpecDB.xOfs = xOfs
-        ZoneSpecDB.yOfs = yOfs
-    end)
-    self.anchor:SetScript("OnHide", function(self)
-        self:GetParent():StopMovingOrSizing()
-    end)
-
     ZoneSpec.frame = self
 end
 
 -- Slash Commands
 SLASH_ZONESPEC1, SLASH_ZONESPEC2 = "/zonespec", "/zs";
 function SlashCmdList.ZONESPEC(msg, editBox)
-    -- printDebug("msg:", msg)
+    -- ZoneSpec:printDebug("msg:", msg)
     if msg == "toggle" then
         if ZoneSpecDB.isMovable then
             ZoneSpecDB.isMovable = false
             ZoneSpec:UpdateIcons()
             ZoneSpec:OnEvent(ZoneSpec.frame, "BAG_UPDATE_DELAYED")
             ZoneSpec.frame.anchor:Hide()
-            -- printDebug("ZoneSpec is locked");
+            -- ZoneSpec:printDebug("ZoneSpec is locked");
         else
             ZoneSpecDB.isMovable = true
             ZoneSpec:UpdateIcons()
             ZoneSpec:OnEvent(ZoneSpec.frame, "BAG_UPDATE_DELAYED")
             ZoneSpec.frame.anchor:Show()
-            -- printDebug("ZoneSpec is unlocked");
+            -- ZoneSpec:printDebug("ZoneSpec is unlocked");
         end
     elseif msg == "clear" then
         -- Clear the talent and glyph data for the current location.
@@ -330,12 +321,12 @@ function SlashCmdList.ZONESPEC(msg, editBox)
         ZoneSpec:UpdateIcons()
         print("|cff22dd22ZoneSpec|r: Data for", curZone, "has been cleared.");
     elseif msg == "reset" then
-        -- printDebug("Reset character saved vars")
+        -- ZoneSpec:printDebug("Reset character saved vars")
         ZoneSpec:SetZSChar(true)
         print("|cff22dd22ZoneSpec|r: Data for this character has been reset.");
     elseif msg == "debug" then
-        -- printDebug("defaults.isMovable:", defaults.isMovable);
-        -- printDebug("ZoneSpecDB.isMovable:", ZoneSpecDB.isMovable);
+        -- ZoneSpec:printDebug("defaults.isMovable:", defaults.isMovable);
+        -- ZoneSpec:printDebug("ZoneSpecDB.isMovable:", ZoneSpecDB.isMovable);
     else
         print("Usage: /zs |cff22dd22command|r");
         print("|cff22dd22toggle|r - Show/Hide the anchor frame to move it or lock it in place.")

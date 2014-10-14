@@ -1,5 +1,5 @@
-## Interface: 50400
-## Title: |cff22dd22ZoneSpec|r
+## Interface: 60000
+## Title: ZoneSpec
 ## Notes: Saved talents and glyphs based on location.
 ## Author: Gethe
 ## Version: v1.0.9
