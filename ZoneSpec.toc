@@ -1,9 +1,9 @@
-## Interface: 60000
+## Interface: 60100
 ## Title: ZoneSpec
 ## Notes: Saved talents and glyphs based on location.
 ## Author: Gethe
-## Version: v1.0.9
+## Version: @project-version@
 ## SavedVariables: ZoneSpecDB
 ## SavedVariablesPerCharacter: ZSChar
 
-ZoneSpec.xml
+ZoneSpec.lua
