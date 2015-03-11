@@ -1,7 +1,7 @@
 local NAME, db = ...
 ZoneSpec = db
 
-local ZSVersion = tonumber(GetAddOnMetadata(NAME, "Version"))
+local ZSVersion = GetAddOnMetadata(NAME, "Version")
 local debug = false
 
 local curZone
@@ -31,7 +31,7 @@ ZSChar = {
                 }, -- ["1"]
             },
             ["glyphs"] = {
-                
+
             }
         },
     },
@@ -112,7 +112,7 @@ function ZoneSpec:showTalents(show)
         --ZoneSpec:printDebug("talent"..i)
         self.frame.talents[i]:Hide()
     end
-    if show then 
+    if show then
         for i = 1, numTalents do
             self.frame.talents[i]:Show()
         end
@@ -124,7 +124,7 @@ function ZoneSpec:showGlyphs(show)
         --ZoneSpec:printDebug("showGlyphs", self.frame.glyphs, i)
         self.frame.glyphs[i]:Hide()
     end
-    if show then 
+    if show then
         for i = 2, 6, 2 do
             self.frame.glyphs[i]:Show()
         end
@@ -135,7 +135,7 @@ function ZoneSpec:UpdateIcons()
     maxTalents = GetMaxTalentTier()
     -- ZoneSpec:printDebug("UpdateIcons;", curZone, curSpec)
 
-    if (not curSpec) or (maxTalents == 0) then 
+    if (not curSpec) or (maxTalents == 0) then
         -- ZoneSpec:printDebug("UpdateIcons;", "nope")
         self:showTalents((ZoneSpecDB.isMovable) or (talentsShown))
         self:showGlyphs((ZoneSpecDB.isMovable) or (glyphsShown))
@@ -223,11 +223,10 @@ end
 
 
 ---------------------------------
-do 
+do
     local frame = CreateFrame("Frame", "ZSFrame", UIParent)
     frame:SetSize(200, 64)
     frame:SetMovable(true)
-    frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton")
 
     local anchor = CreateFrame("Button", nil, frame, "ChatConfigTabTemplate")
@@ -394,7 +393,7 @@ do
             curZone = GetMinimapZoneText()
             curSpec = GetSpecialization()
             -- ZoneSpec:printDebug("PLAYER_LOGIN;", "curZone:", curZone, "curSpec:", curSpec)
-            
+
             -- ZoneSpec:printDebug("Create character saved vars")
             ZoneSpec:SetZSChar()
 
@@ -454,4 +453,3 @@ function SlashCmdList.ZONESPEC(msg, editBox)
         print("|cff22dd22reset|r - Reset all data for the current character.")
     end
 end
-
