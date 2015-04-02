@@ -156,21 +156,25 @@ function ZoneSpec:UpdateIcons()
     local activeSpec = GetActiveSpecGroup()
     local talents = self.frame.talents
     for row = 1, maxTalents do
+        if zone and not zone.talents[row] then
+            --ZoneSpec:printDebug("Missing Row:", row)
+            zone.talents[row] = {}
+        end
         for column = 1, NUM_TALENT_COLUMNS do
             local id, _, texture, selected = GetTalentInfo(row, column, activeSpec)
             --ZoneSpec:printDebug("Row:", row, "Saved:", zone and zone.talents[row].id, "Equipped:", id)
             if (not zone) or (selected and zone.talents[row].id == id) then
                 --ZoneSpec:printDebug("Button:", talents[row], "Icon:", talents[row].icon)
                 --Set current talent to button
-                talents[row].id = id
-                talents[row].icon:SetTexture(texture)
+                talents[row]:SetID(id)
+                talents[row].icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
                 talents[row].icon:SetDesaturated(true)
                 talents[row].check:Show()
                 --talentsShown = false
                 break
             elseif (not selected and zone.talents[row].id == id) then
                 --Set saved talent to button
-                talents[row].id = zone.talents[row].id
+                talents[row]:SetID(zone.talents[row].id)
                 talents[row].icon:SetTexture(zone.talents[row].texture)
                 talents[row].icon:SetDesaturated(false)
                 talents[row].check:Hide()
@@ -189,14 +193,14 @@ function ZoneSpec:UpdateIcons()
             --ZoneSpec:printDebug("Slot:", i, "Saved:", zone and zone.glyphs[i].spell, "Equipped:", glyphSpell)
             if (not zone) or (zone.glyphs[i].spell == glyphSpell) then
                 --Set current glyph to button
-                glyphs[i].spellID = glyphSpell
+                glyphs[i]:SetID(glyphSpell)
                 glyphs[i].icon:SetTexture(path or [[Interface\Icons\INV_Misc_QuestionMark]])
                 glyphs[i].icon:SetDesaturated(true)
                 glyphs[i].check:Show()
                 --glyphsShown = false
             else
                 --Set saved glyph to button
-                glyphs[i].spellID = zone.glyphs[i].spell
+                glyphs[i]:SetID(zone.glyphs[i].spell)
                 glyphs[i].icon:SetTexture(zone.glyphs[i].icon)
                 glyphs[i].icon:SetDesaturated(false)
                 glyphs[i].check:Hide()
@@ -263,97 +267,65 @@ do
     end)
     frame.anchor = anchor
 
+    local function CreateIcon(parent, isTalent)
+        local btn = CreateFrame("Button", nil, parent)
+        btn:SetSize(32, 32)
+
+        local icon = btn:CreateTexture(nil, "BACKGROUND")
+        icon:SetAllPoints()
+        icon:SetTexture([[Interface\Icons\INV_Misc_QuestionMark]])
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        btn.icon = icon
+
+        local check = btn:CreateTexture(nil, "BACKGROUND")
+        check:SetPoint("BOTTOMRIGHT")
+        check:SetAtlas("Tracker-Check", true)
+        btn.check = check
+
+        btn:SetScript("OnEnter", function(self, ...)
+            --ZoneSpec:printDebug("OnEnter:", isTalent, self:GetID())
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            if self:GetID() then
+                if isTalent then
+                    GameTooltip:SetTalent(self:GetID())
+                else
+                    GameTooltip:SetSpellByID(self:GetID())
+                end
+            else
+                GameTooltip:AddLine(EMPTY)
+            end
+            if ( self.extraTooltip ) then
+                GameTooltip:AddLine(self.extraTooltip)
+            end
+            GameTooltip:Show()
+        end)
+        btn:SetScript("OnLeave", function(self, ...)
+            --ZoneSpec:printDebug("OnLeave: Talent", i)
+            GameTooltip:Hide()
+        end)
+        return btn
+    end
+
     frame.talents = {}
     for i = 1, 7 do
-        local talent = CreateFrame("Button", nil, frame)
-        talent:SetSize(32, 32)
+        local talent = CreateIcon(frame, true)
         if i == 1 then
             talent:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 4, -1)
         else
             talent:SetPoint("TOPLEFT", frame.talents[i - 1], "TOPRIGHT", 1, 0)
         end
-        local icon = talent:CreateTexture(nil, "BACKGROUND")
-        icon:SetAllPoints()
-        icon:SetTexture([[Interface\Icons\INV_Misc_QuestionMark]])
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        talent.icon = icon
-        local check = talent:CreateTexture(nil, "BACKGROUND")
-        check:SetPoint("BOTTOMRIGHT")
-        check:SetAtlas("Tracker-Check", true)
-        talent.check = check
-        talent:SetScript("OnEnter", function(self, ...)
-            --ZoneSpec:printDebug("OnEnter: Talent", i)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            if self.id then
-                GameTooltip:SetTalent(self.id)
-            else
-                GameTooltip:AddLine(GLYPH_EMPTY)
-                GameTooltip:AddLine(GLYPH_EMPTY_DESC)
-            end
-            if ( self.extraTooltip ) then
-                GameTooltip:AddLine(self.extraTooltip)
-            end
-            GameTooltip:Show()
-        end)
-        talent:SetScript("OnLeave", function(self, ...)
-            --ZoneSpec:printDebug("OnLeave: Talent", i)
-            GameTooltip:Hide()
-        end)
         frame.talents[i] = talent
     end
 
     frame.glyphs = {}
     for i = 2, 6, 2 do
-        local glyph = CreateFrame("Button", nil, frame)
-        glyph:SetSize(32, 32)
+        local glyph = CreateIcon(frame)
         glyph:SetPoint("TOPLEFT", frame.talents[i/2], "BOTTOMLEFT", 0, -1)
-        local icon = glyph:CreateTexture(nil, "BACKGROUND")
-        icon:SetAllPoints()
-        icon:SetTexture([[Interface\Icons\INV_Misc_QuestionMark]])
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        glyph.icon = icon
-        local check = glyph:CreateTexture(nil, "BACKGROUND")
-        check:SetPoint("BOTTOMRIGHT")
-        check:SetAtlas("Tracker-Check", true)
-        glyph.check = check
-        glyph:SetScript("OnEnter", function(self, ...)
-            --ZoneSpec:printDebug("OnEnter: Glyph", i)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetGlyph(i)
-            if ( self.extraTooltip ) then
-                GameTooltip:AddLine(self.extraTooltip)
-            end
-            GameTooltip:Show()
-        end)
-        glyph:SetScript("OnLeave", function(self, ...)
-            --ZoneSpec:printDebug("OnLeave: Glyph", i)
-            GameTooltip:Hide()
-        end)
         frame.glyphs[i] = glyph
     end
 
-    local reagent = CreateFrame("Button", nil, frame)
-    reagent:SetSize(32, 32)
+    local reagent = CreateIcon(frame)
     reagent:SetPoint("TOPRIGHT", frame.talents[i], "TOPLEFT", -1, 0)
-    local icon = reagent:CreateTexture(nil, "BACKGROUND")
-    icon:SetAllPoints()
-    icon:SetTexture([[Interface\Icons\INV_Misc_QuestionMark]])
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    reagent.icon = icon
-    reagent:SetScript("OnEnter", function(self, ...)
-        --ZoneSpec:printDebug("OnEnter: Glyph", i)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        if self.spellID then
-            GameTooltip:SetSpellByID(self.spellID, false, false, true)
-        else
-            GameTooltip:AddLine(GLYPH_EMPTY)
-            GameTooltip:AddLine(GLYPH_EMPTY_DESC)
-        end
-        if ( self.extraTooltip ) then
-            GameTooltip:AddLine(self.extraTooltip)
-        end
-        GameTooltip:Show()
-    end)
     frame.reagent = reagent
 
     frame:RegisterEvent("ADDON_LOADED")
@@ -385,7 +357,7 @@ do
                 -- ZoneSpec:printDebug(self.icon:GetTexture())
                 self.reagent.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_Dust_02")
                 self.reagent:SetText(count or 0)
-                self.reagent.spellID = id
+                self.reagent:SetID(id)
             else
                 self.reagent:Hide()
             end
