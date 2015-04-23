@@ -162,17 +162,17 @@ function ZoneSpec:UpdateIcons()
         end
         for column = 1, NUM_TALENT_COLUMNS do
             local id, _, texture, selected = GetTalentInfo(row, column, activeSpec)
-            --ZoneSpec:printDebug("Row:", row, "Saved:", zone and zone.talents[row].id, "Equipped:", id)
-            if (not zone) or (selected and zone.talents[row].id == id) then
-                --ZoneSpec:printDebug("Button:", talents[row], "Icon:", talents[row].icon)
+            --ZoneSpec:printDebug("Row:", row, "Saved:", zone and zone.talents[row].id, "Selected:", selected and id)
+            if (not zone) or selected and (zone and zone.talents[row].id == id) then
+                --ZoneSpec:printDebug("Selected Button:", talents[row], "Icon:", talents[row].icon)
                 --Set current talent to button
                 talents[row]:SetID(id)
                 talents[row].icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
                 talents[row].icon:SetDesaturated(true)
                 talents[row].check:Show()
-                --talentsShown = false
                 break
-            elseif (not selected and zone.talents[row].id == id) then
+            elseif (not selected) and (zone and zone.talents[row].id == id) then
+                --ZoneSpec:printDebug("Not Selected Button:", talents[row], "Icon:", talents[row].icon)
                 --Set saved talent to button
                 talents[row]:SetID(zone.talents[row].id)
                 talents[row].icon:SetTexture(zone.talents[row].texture)
@@ -180,8 +180,6 @@ function ZoneSpec:UpdateIcons()
                 talents[row].check:Hide()
                 talentsShown = true
                 break
-            else
-                --ZoneSpec:printDebug("What?", row)
             end
         end
     end
@@ -191,13 +189,12 @@ function ZoneSpec:UpdateIcons()
         local enabled, glyphType, _, glyphSpell, path = GetGlyphSocketInfo(i)
         if enabled then
             --ZoneSpec:printDebug("Slot:", i, "Saved:", zone and zone.glyphs[i].spell, "Equipped:", glyphSpell)
-            if (not zone) or (zone.glyphs[i].spell == glyphSpell) then
+            if (not zone) or (zone and zone.glyphs[i].spell == glyphSpell) then
                 --Set current glyph to button
-                glyphs[i]:SetID(glyphSpell)
+                glyphs[i]:SetID(glyphSpell or 112105)
                 glyphs[i].icon:SetTexture(path or [[Interface\Icons\INV_Misc_QuestionMark]])
                 glyphs[i].icon:SetDesaturated(true)
                 glyphs[i].check:Show()
-                --glyphsShown = false
             else
                 --Set saved glyph to button
                 glyphs[i]:SetID(zone.glyphs[i].spell)
