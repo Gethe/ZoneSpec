@@ -1,6 +1,8 @@
 local NAME, ZoneSpec = ...
 _G.ZoneSpec = ZoneSpec
 
+local talentIcons, glyphIcons = {}, {}
+
 local HBD = LibStub("HereBeDragons-1.0")
 local ZSVersion = GetAddOnMetadata(NAME, "Version")
 
@@ -29,6 +31,9 @@ local debugger, debug do
         end
         debugger:AddLine(text)
     end
+end
+local function zsPrint(...)
+    print("|cff22dd22ZoneSpec|r:", ...)
 end
 
 local curZone
@@ -132,7 +137,7 @@ function ZoneSpec:CreateSaveButton()
         ZSChar[curSpec][curZone]["glyphs"] = glyphs
 
         self:UpdateIcons()
-        debug("Talent and Glyph data has been saved for", curZone, ".")
+        zsPrint("Talent and Glyph data has been saved for", curZone, ".")
     end)
     hooksecurefunc("PlayerTalentFrameActivateButton_Update", function(numTalentGroups)
         local activeSpec = "spec"..GetActiveSpecGroup()
@@ -148,23 +153,23 @@ function ZoneSpec:showTalents(show)
     local numTalents = GetMaxTalentTier()
     for i = 1, 7 do
         debug("talent"..i)
-        self.frame.talents[i]:Hide()
+        talentIcons[i]:Hide()
     end
     if show then
         for i = 1, numTalents do
-            self.frame.talents[i]:Show()
+            talentIcons[i]:Show()
         end
     end
 end
 
 function ZoneSpec:showGlyphs(show)
     for i = 2, 6, 2 do
-        debug("showGlyphs", self.frame.glyphs, i)
-        self.frame.glyphs[i]:Hide()
+        debug("showGlyphs", glyphIcons, i)
+        glyphIcons[i]:Hide()
     end
     if show then
         for i = 2, 6, 2 do
-            self.frame.glyphs[i]:Show()
+            glyphIcons[i]:Show()
         end
     end
 end
@@ -192,7 +197,6 @@ function ZoneSpec:UpdateIcons()
 
     --show when new talent tier is available
     local activeSpec = GetActiveSpecGroup()
-    local talents = self.frame.talents
     for row = 1, maxTalents do
         if zone and not zone.talents[row] then
             debug("Missing Row:", row)
@@ -202,43 +206,42 @@ function ZoneSpec:UpdateIcons()
             local id, _, texture, selected = GetTalentInfo(row, column, activeSpec)
             debug("Row:", row, "Saved:", zone and zone.talents[row].id, "Selected:", selected and id)
             if (not zone) or selected and (zone and zone.talents[row].id == id) then
-                debug("Selected Button:", talents[row], "Icon:", talents[row].icon)
+                debug("Selected Button:", talentIcons[row], "Icon:", talentIcons[row].icon)
                 --Set current talent to button
-                talents[row]:SetID(id)
-                talents[row].icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
-                talents[row].icon:SetDesaturated(true)
-                talents[row].check:Show()
+                talentIcons[row]:SetID(id)
+                talentIcons[row].icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
+                talentIcons[row].icon:SetDesaturated(true)
+                talentIcons[row].check:Show()
                 break
             elseif (not selected) and (zone and zone.talents[row].id == id) then
-                debug("Not Selected Button:", talents[row], "Icon:", talents[row].icon)
+                debug("Not Selected Button:", talentIcons[row], "Icon:", talentIcons[row].icon)
                 --Set saved talent to button
-                talents[row]:SetID(zone.talents[row].id)
-                talents[row].icon:SetTexture(zone.talents[row].texture)
-                talents[row].icon:SetDesaturated(false)
-                talents[row].check:Hide()
+                talentIcons[row]:SetID(zone.talents[row].id)
+                talentIcons[row].icon:SetTexture(zone.talents[row].texture)
+                talentIcons[row].icon:SetDesaturated(false)
+                talentIcons[row].check:Hide()
                 talentsShown = true
                 break
             end
         end
     end
 
-    local glyphs = self.frame.glyphs
     for i = glyphStart, NUM_GLYPH_SLOTS, glyphIncr do
         local enabled, glyphType, _, glyphSpell, path = GetGlyphSocketInfo(i)
         if enabled then
             debug("Slot:", i, "Saved:", zone and zone.glyphs[i].spell, "Equipped:", glyphSpell)
             if (not zone) or (zone and zone.glyphs[i].spell == glyphSpell) then
                 --Set current glyph to button
-                glyphs[i]:SetID(glyphSpell or 112105)
-                glyphs[i].icon:SetTexture(path or [[Interface\Icons\INV_Misc_QuestionMark]])
-                glyphs[i].icon:SetDesaturated(true)
-                glyphs[i].check:Show()
+                glyphIcons[i]:SetID(glyphSpell or 112105)
+                glyphIcons[i].icon:SetTexture(path or [[Interface\Icons\INV_Misc_QuestionMark]])
+                glyphIcons[i].icon:SetDesaturated(true)
+                glyphIcons[i].check:Show()
             else
                 --Set saved glyph to button
-                glyphs[i]:SetID(zone.glyphs[i].spell)
-                glyphs[i].icon:SetTexture(zone.glyphs[i].icon)
-                glyphs[i].icon:SetDesaturated(false)
-                glyphs[i].check:Hide()
+                glyphIcons[i]:SetID(zone.glyphs[i].spell)
+                glyphIcons[i].icon:SetTexture(zone.glyphs[i].icon)
+                glyphIcons[i].icon:SetDesaturated(false)
+                glyphIcons[i].check:Hide()
                 glyphsShown = true
             end
         end
@@ -365,26 +368,27 @@ do
         return btn
     end
 
-    frame.talents = {}
     for i = 1, 7 do
         local talent = CreateIcon(frame, true)
         if i == 1 then
             talent:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 4, -1)
         else
-            talent:SetPoint("TOPLEFT", frame.talents[i - 1], "TOPRIGHT", 1, 0)
+            talent:SetPoint("TOPLEFT", talentIcons[i - 1], "TOPRIGHT", 1, 0)
         end
-        frame.talents[i] = talent
+        frame["talent"..i] = talent
+        talentIcons[i] = talent
     end
 
-    frame.glyphs = {}
     for i = 2, 6, 2 do
         local glyph = CreateIcon(frame)
-        glyph:SetPoint("TOPLEFT", frame.talents[i/2], "BOTTOMLEFT", 0, -1)
-        frame.glyphs[i] = glyph
+        glyph:SetPoint("TOPLEFT", talentIcons[i/2], "BOTTOMLEFT", 0, -1)
+        frame["glyph"..i] = glyph
+        glyphIcons[i] = glyph
     end
 
     local reagent = CreateIcon(frame)
-    reagent:SetPoint("TOPRIGHT", frame.talents[i], "TOPLEFT", -1, 0)
+    reagent:SetNormalFontObject("SystemFont_Huge1_Outline")
+    reagent:SetPoint("TOPRIGHT", frame.talent1, "TOPLEFT", -1, 0)
     frame.reagent = reagent
 
     frame:RegisterEvent("ADDON_LOADED")
@@ -410,10 +414,10 @@ do
             end
         elseif (event == "BAG_UPDATE_DELAYED") then
             local name, count, icon, id = GetTalentClearInfo()
+            debug("Talent Clear Info", name, count)
             --self.reagent.text:SetText(count)
             if (ZoneSpecDB.isMovable) or (count and count <= 6) then
                 self.reagent:Show()
-                debug(self.reagent.icon:GetTexture())
                 self.reagent.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_Dust_02")
                 self.reagent:SetText(count or 0)
                 self.reagent:SetID(id)
@@ -467,23 +471,23 @@ function SlashCmdList.ZONESPEC(msg, editBox)
             ZoneSpec:UpdateIcons()
             ZoneSpec.frame:GetScript("OnEvent")(ZoneSpec.frame, "BAG_UPDATE_DELAYED")
             ZoneSpec.frame.anchor:Hide()
-            debug("ZoneSpec is locked");
+            zsPrint("ZoneSpec is locked");
         else
             ZoneSpecDB.isMovable = true
             ZoneSpec:UpdateIcons()
             ZoneSpec.frame:GetScript("OnEvent")(ZoneSpec.frame, "BAG_UPDATE_DELAYED")
             ZoneSpec.frame.anchor:Show()
-            debug("ZoneSpec is unlocked");
+            zsPrint("ZoneSpec is unlocked");
         end
     elseif msg == "clear" then
         -- Clear the talent and glyph data for the current location.
         ZSChar[curSpec][curZone] = nil
         ZoneSpec:UpdateIcons()
-        print("|cff22dd22ZoneSpec|r: Data for", curZone, "has been cleared.");
+        zsPrint("Data for", curZone, "has been cleared.");
     elseif msg == "reset" then
         debug("Reset character saved vars")
         ZoneSpec:SetZSChar(true)
-        print("|cff22dd22ZoneSpec|r: Data for this character has been reset.");
+        zsPrint("Data for this character has been reset.");
     elseif msg == "debug" then
         if debugger then
             if debugger:Lines() == 0 then
