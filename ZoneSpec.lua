@@ -1,24 +1,33 @@
-local NAME, ZoneSpec = ...
-_G.ZoneSpec = ZoneSpec
+local ADDON_NAME, ZoneSpec = ...
+local ZSVersion = GetAddOnMetadata(ADDON_NAME, "Version")
 
-local talentIcons, glyphIcons = {}, {}
+-- Lua Globals --
+local _G = _G
+local tostring, select, print = _G.tostring, _G.select, _G.print
 
+-- WoW Globals --
+local CreateFrame, hooksecurefunc, GetInstanceLockTimeRemainingEncounter, GetGlyphSocketInfo = _G.CreateFrame, _G.hooksecurefunc, _G.GetInstanceLockTimeRemainingEncounter, _G.GetGlyphSocketInfo
+local GetActiveSpecGroup, GetTalentInfo, GetMaxTalentTier, GetGlyphSocketInfo = _G.GetActiveSpecGroup, _G.GetTalentInfo, _G.GetMaxTalentTier, _G.GetGlyphSocketInfo
+local MAX_TALENT_TIERS, NUM_TALENT_COLUMNS, NUM_GLYPH_SLOTS = _G.MAX_TALENT_TIERS, _G.NUM_TALENT_COLUMNS, _G.NUM_GLYPH_SLOTS
+local PlayerTalentFrame, GameTooltip = _G.PlayerTalentFrame, _G.GameTooltip
+
+-- Libs --
 local HBD = LibStub("HereBeDragons-1.0")
-local ZSVersion = GetAddOnMetadata(NAME, "Version")
+
 
 local debugger, debug do
     local LTD = true
     function debug(...)
         if not debugger and LTD then
-            LTD = LibStub("LibTextDump-1.0")
+            LTD = _G.LibStub("LibTextDump-1.0")
             if LTD then
-                debugger = LibStub("LibTextDump-1.0"):New("ZoneSpec Debug Output", 640, 480)
+                debugger = LTD:New("ZoneSpec Debug Output", 640, 480)
             else
                 LTD = false
                 return
             end
         end
-        local time = date("%H:%M:%S")
+        local time = _G.date("%H:%M:%S")
         local text = ("[%s]"):format(time)
         for i = 1, select("#", ...) do
             local arg = select(i, ...)
@@ -36,8 +45,9 @@ local function zsPrint(...)
     print("|cff22dd22ZoneSpec|r:", ...)
 end
 
-local curZone
-local curSpec
+local ZSChar, ZoneSpecDB
+local talentIcons, glyphIcons = {}, {}
+local curZone, curSpec
 local multiBossArea
 local maxTalents
 
@@ -90,9 +100,9 @@ function ZoneSpec:CreateSaveButton()
     local btn = CreateFrame("Button", "ZoneSpecSaveButton", PlayerTalentFrame, "UIPanelButtonTemplate")
     btn:SetPoint("BOTTOMRIGHT", -4, 4)
     btn:SetSize(80, 22)
-    btn:SetText(SAVE)
-    if Aurora then
-        Aurora[1].Reskin(btn)
+    btn:SetText(_G.SAVE)
+    if _G.Aurora then
+        _G.Aurora[1].Reskin(btn)
     end
 
     btn:SetScript("OnClick", function()
@@ -107,7 +117,7 @@ function ZoneSpec:CreateSaveButton()
             for column = 1, NUM_TALENT_COLUMNS do
                 local id, name, texture, selected = GetTalentInfo(tier, column, activeSpec)
                 if selected then
-                    debug("Talent", i, "; Texture:", texture) --ZSChar
+                    debug("Talent", id, "; Texture:", texture) --ZSChar
                     talents[tier] = {
                         id = id,
                         texture = texture,
@@ -178,6 +188,8 @@ function ZoneSpec:UpdateIcons()
     maxTalents = GetMaxTalentTier()
     debug("UpdateIcons;", curZone, curSpec)
 
+    local talentsShown = false
+    local glyphsShown = false
     if (not curSpec) or (maxTalents == 0) then
         debug("UpdateIcons;", "nope")
         self:showTalents((ZoneSpecDB.isMovable) or (talentsShown))
@@ -185,8 +197,6 @@ function ZoneSpec:UpdateIcons()
         return
     end
 
-    local talentsShown = false
-    local glyphsShown = false
     local zone = ZSChar[curSpec][curZone] --or false
 
     if zone then
@@ -255,7 +265,7 @@ end
 function ZoneSpec:SetZSChar(isReset)
     debug("|cff22dd22ZS|r ZSChar:", ZSChar, "ZSChar[1]:", ZSChar[1])
     if isReset or (not ZSChar[1]) then
-        for i = 1, GetNumSpecializations() do
+        for i = 1, _G.GetNumSpecializations() do
             debug("ZSChar:", ZSChar, "i:", i)
             ZSChar[i] = {}
             debug("ZSChar:", ZSChar, "ZSChar[i]:", ZSChar[i])
@@ -345,7 +355,7 @@ do
         btn.check = check
 
         btn:SetScript("OnEnter", function(self, ...)
-            debug("OnEnter:", isTalent, self:GetID())
+            debug("OnEnter", isTalent, self:GetID())
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             if self:GetID() then
                 if isTalent then
@@ -354,7 +364,7 @@ do
                     GameTooltip:SetSpellByID(self:GetID())
                 end
             else
-                GameTooltip:AddLine(EMPTY)
+                GameTooltip:AddLine(_G.EMPTY)
             end
             if ( self.extraTooltip ) then
                 GameTooltip:AddLine(self.extraTooltip)
@@ -362,7 +372,7 @@ do
             GameTooltip:Show()
         end)
         btn:SetScript("OnLeave", function(self, ...)
-            debug("OnLeave: Talent", i)
+            debug("OnLeave", isTalent, self:GetID())
             GameTooltip:Hide()
         end)
         return btn
@@ -402,10 +412,10 @@ do
         debug("Event", event, ...)
         if (event == "ADDON_LOADED") then
             local name = ...
-            if name == NAME then
+            if name == ADDON_NAME then
                 debug(name, "loaded")
-                ZoneSpecDB = ZoneSpecDB or defaults
-                ZSChar = ZSChar or {}
+                ZoneSpecDB = _G.ZoneSpecDB or defaults
+                ZSChar = _G.ZSChar or {}
                 self:SetPoint(ZoneSpecDB.point, ZoneSpecDB.xOfs, ZoneSpecDB.yOfs)
             elseif name == "Blizzard_TalentUI" then
                 debug(name, "loaded")
@@ -413,7 +423,7 @@ do
                 ZoneSpec:CreateSaveButton()
             end
         elseif (event == "BAG_UPDATE_DELAYED") then
-            local name, count, icon, id = GetTalentClearInfo()
+            local name, count, icon, id = _G.GetTalentClearInfo()
             debug("Talent Clear Info", name, count)
             --self.reagent.text:SetText(count)
             if (ZoneSpecDB.isMovable) or (count and count <= 6) then
@@ -425,8 +435,8 @@ do
                 self.reagent:Hide()
             end
         elseif (event == "PLAYER_LOGIN") then
-            curZone = GetMinimapZoneText()
-            curSpec = GetSpecialization()
+            curZone = _G.GetMinimapZoneText()
+            curSpec = _G.GetSpecialization()
             debug("PLAYER_LOGIN;", "curZone:", curZone, "curSpec:", curSpec)
 
             debug("Create character saved vars")
@@ -445,8 +455,8 @@ do
             local encounterID, name = ...
             ZoneSpec:UpdateIcons(encounterID)
         else
-            curZone = GetMinimapZoneText()
-            curSpec = GetSpecialization()
+            curZone = _G.GetMinimapZoneText()
+            curSpec = _G.GetSpecialization()
 
             ZoneSpec:IsInMultiBossArea("test2", event, HBD:GetPlayerZone())
             debug(event, ";", curZone, ";", ...)
@@ -462,7 +472,7 @@ end
 
 
 -- Slash Commands
-SLASH_ZONESPEC1, SLASH_ZONESPEC2 = "/zonespec", "/zs";
+_G.SLASH_ZONESPEC1, _G.SLASH_ZONESPEC2 = "/zonespec", "/zs";
 function SlashCmdList.ZONESPEC(msg, editBox)
     debug("msg:", msg)
     if msg == "toggle" then
