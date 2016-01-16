@@ -1,5 +1,2 @@
-**v1.0.15**
- -  Fixed a bug when zoning into old content.
-
-**v1.0.14**
- -  The frame will no longer intercept mouse clicks when hidden.
+**v1.1.0**
+ -  Allow for saving of separate talent info when multiple bosses utilize the same area. (eg. ToC, or the first two bosses in HFC)

@@ -8,6 +8,7 @@ externals:
 
 ignore:
     - ZoneSpec.sublime-project
+    - .pkgmeta
 
 manual-changelog: CHANGELOG.md
 
