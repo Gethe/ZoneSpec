@@ -5,5 +5,10 @@ externals:
         svn://svn.wowace.com/wow/callbackhandler/mainline/trunk/CallbackHandler-1.0
     libs/HereBeDragons-1.0:
         git://git.wowace.com/wow/herebedragons/mainline.git
+
 ignore:
     - ZoneSpec.sublime-project
+
+manual-changelog: CHANGELOG.md
+
+license-output: LICENSE.txt
