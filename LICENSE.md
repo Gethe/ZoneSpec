@@ -1,4 +1,4 @@
-Copyright (c) 2013-2015 Gethe. All rights reserved.
+Copyright (c) 2013-2016 Gethe. All rights reserved.
 
 Permission is granted for anyone to use, read, or otherwise interpret this
 software for any purpose, without any restrictions.
