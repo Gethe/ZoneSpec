@@ -286,8 +286,9 @@ function ZoneSpec:UpdateIcons()
             if not zone.talents then
                 zone = nil
             end
-        elseif (not zone.talents[1]) or (not zone.glyphs[1]) then
+        elseif not zone.talents then
             zone = nil
+            ZSChar[curSpec][curZone] = nil
         end
     end
 
