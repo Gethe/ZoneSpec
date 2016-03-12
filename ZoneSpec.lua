@@ -1,25 +1,19 @@
 local ADDON_NAME, ZoneSpec = ...
-local ZSVersion = GetAddOnMetadata(ADDON_NAME, "Version")
+local ZSVersion = _G.GetAddOnMetadata(ADDON_NAME, "Version")
 
 -- Lua Globals --
 local _G = _G
 local tostring, select, print = _G.tostring, _G.select, _G.print
 
--- WoW Globals --
-local CreateFrame, hooksecurefunc, GetInstanceLockTimeRemainingEncounter, GetGlyphSocketInfo = _G.CreateFrame, _G.hooksecurefunc, _G.GetInstanceLockTimeRemainingEncounter, _G.GetGlyphSocketInfo
-local GetActiveSpecGroup, GetTalentInfo, GetMaxTalentTier, GetGlyphSocketInfo = _G.GetActiveSpecGroup, _G.GetTalentInfo, _G.GetMaxTalentTier, _G.GetGlyphSocketInfo
-local MAX_TALENT_TIERS, NUM_TALENT_COLUMNS, NUM_GLYPH_SLOTS = _G.MAX_TALENT_TIERS, _G.NUM_TALENT_COLUMNS, _G.NUM_GLYPH_SLOTS
-local GameTooltip = _G.GameTooltip
-
 -- Libs --
-local HBD = LibStub("HereBeDragons-1.0")
+local HBD = _G.LibStub("HereBeDragons-1.0")
 
 
 local debugger, debug do
     local LTD = true
     function debug(...)
         if not debugger and LTD then
-            LTD = _G.LibStub("LibTextDump-1.0")
+            LTD = _G.LibStub("RealUI_LibTextDump-1.0", true)
             if LTD then
                 debugger = LTD:New("ZoneSpec Debug Output", 640, 480)
             else
@@ -74,10 +68,12 @@ local multiBossAreas = {
                 { -- Protectors of the Endless
                     index = 1,
                     id = 1409,
+                    npcID = {60583, 60586, 60585}, -- Protector Kaolan, Elder Asani, Elder Regail
                 },
                 { -- Tsulong
                     index = 2,
                     id = 1505,
+                    npcID = {62442},
                     isLastBossforArea = true,
                 },
             },
@@ -118,10 +114,12 @@ local multiBossAreas = {
                 { -- Hellfire Assault
                     index = 1,
                     id = 1778,
+                    npcID = {95068},
                 },
                 { -- Iron Reaver
                     index = 2,
                     id = 1785,
+                    npcID = {90284},
                     isLastBossforArea = true,
                 },
             }
@@ -163,7 +161,7 @@ ZSChar = {
 ]]
 
 function ZoneSpec:CreateSaveButton()
-    local btn = CreateFrame("Button", "ZoneSpecSaveButton", _G.PlayerTalentFrame, "UIPanelButtonTemplate")
+    local btn = _G.CreateFrame("Button", "ZoneSpecSaveButton", _G.PlayerTalentFrame, "UIPanelButtonTemplate")
     btn:SetPoint("BOTTOMRIGHT", -4, 4)
     btn:SetSize(80, 22)
     btn:SetText(_G.SAVE)
@@ -176,10 +174,10 @@ function ZoneSpec:CreateSaveButton()
 
         debug("Save the current talent config")
         local talents = {}
-        local activeSpec = GetActiveSpecGroup()
-        for tier = 1, MAX_TALENT_TIERS do
-            for column = 1, NUM_TALENT_COLUMNS do
-                local id, name, texture, selected = GetTalentInfo(tier, column, activeSpec)
+        local activeSpec = _G.GetActiveSpecGroup()
+        for tier = 1, _G.MAX_TALENT_TIERS do
+            for column = 1, _G.NUM_TALENT_COLUMNS do
+                local id, _, texture, selected = _G.GetTalentInfo(tier, column, activeSpec)
                 if selected then
                     debug("Talent", id, "; Texture:", texture) --ZSChar
                     talents[tier] = {
@@ -199,8 +197,8 @@ function ZoneSpec:CreateSaveButton()
 
         local glyphs = {}
         debug("Save the current glyph config")
-        for i = 1, NUM_GLYPH_SLOTS do
-            local _, glyphType, _, glyphSpell, texture = GetGlyphSocketInfo(i)
+        for i = 1, _G.NUM_GLYPH_SLOTS do
+            local _, glyphType, _, glyphSpell, texture = _G.GetGlyphSocketInfo(i)
             debug("Glyph:", i, "; Texture:", texture) --ZSChar
             glyphs[i] = {
                 glyphType = glyphType,
@@ -211,25 +209,25 @@ function ZoneSpec:CreateSaveButton()
         zone["glyphs"] = glyphs
 
 
-        local bossIndex, bossName
+        local boss, bossName
         if curBossArea then
-            bossIndex, bossName = self:GetCurrentBossForArea()
+            boss, bossName = self:GetBossForArea()
             local key = curBossArea.key
             ZSChar[curSpec][curZone] = ZSChar[curSpec][curZone] or {[key] = {}}
-            ZSChar[curSpec][curZone][key][bossIndex] = zone
+            ZSChar[curSpec][curZone][key][boss.index] = zone
         else
             ZSChar[curSpec][curZone] = zone
         end
 
         self:UpdateIcons()
-        if bossIndex then
+        if boss.index then
             zsPrint(("Talent and Glyph data has been saved for %s (%s)."):format(curZone, bossName))
         else
             zsPrint(("Talent and Glyph data has been saved for %s."):format(curZone))
         end
     end)
-    hooksecurefunc("PlayerTalentFrameActivateButton_Update", function(numTalentGroups)
-        local activeSpec = "spec"..GetActiveSpecGroup()
+    _G.hooksecurefunc("PlayerTalentFrameActivateButton_Update", function()
+        local activeSpec = "spec".._G.GetActiveSpecGroup()
         if (activeSpec == _G.PlayerTalentFrame.selectedPlayerSpec) then
             btn:Show()
         else
@@ -239,7 +237,7 @@ function ZoneSpec:CreateSaveButton()
 end
 
 function ZoneSpec:showTalents(show)
-    local numTalents = GetMaxTalentTier()
+    local numTalents = _G.GetMaxTalentTier()
     for i = 1, 7 do
         debug("talent"..i)
         talentIcons[i]:Hide()
@@ -264,7 +262,7 @@ function ZoneSpec:showGlyphs(show)
 end
 
 function ZoneSpec:UpdateIcons()
-    maxTalents = GetMaxTalentTier()
+    maxTalents = _G.GetMaxTalentTier()
     debug("UpdateIcons;", curZone, curSpec)
 
     local talentsShown = false
@@ -282,7 +280,8 @@ function ZoneSpec:UpdateIcons()
         if curBossArea then
             if zone[curBossArea.key] then
                 debug("Set zone to boss area", curBossArea.key)
-                zone = zone[curBossArea.key][self:GetCurrentBossForArea()]
+                local boss = self:GetBossForArea()
+                zone = zone[curBossArea.key][boss.index]
             end
             if not zone.talents then
                 zone = nil
@@ -293,14 +292,14 @@ function ZoneSpec:UpdateIcons()
     end
 
     --show when new talent tier is available
-    local activeSpec = GetActiveSpecGroup()
+    local activeSpec = _G.GetActiveSpecGroup()
     for row = 1, maxTalents do
         if zone and not zone.talents[row] then
             debug("Missing Row:", row)
             zone.talents[row] = {}
         end
-        for column = 1, NUM_TALENT_COLUMNS do
-            local id, _, texture, selected = GetTalentInfo(row, column, activeSpec)
+        for column = 1, _G.NUM_TALENT_COLUMNS do
+            local id, _, texture, selected = _G.GetTalentInfo(row, column, activeSpec)
             debug("Row:", row, "Saved:", zone and zone.talents[row].id, "Selected:", selected and id)
             if (not zone) or selected and (zone and zone.talents[row].id == id) then
                 debug("Selected Button:", talentIcons[row], "Icon:", talentIcons[row].icon)
@@ -323,8 +322,8 @@ function ZoneSpec:UpdateIcons()
         end
     end
 
-    for i = glyphStart, NUM_GLYPH_SLOTS, glyphIncr do
-        local enabled, glyphType, _, glyphSpell, path = GetGlyphSocketInfo(i)
+    for i = glyphStart, _G.NUM_GLYPH_SLOTS, glyphIncr do
+        local enabled, _, _, glyphSpell, path = _G.GetGlyphSocketInfo(i)
         if enabled then
             debug("Slot:", i, "Saved:", zone and zone.glyphs[i].spell, "Equipped:", glyphSpell)
             if (not zone) or (zone and zone.glyphs[i].spell == glyphSpell) then
@@ -364,15 +363,34 @@ function ZoneSpec:IsInBossAreaBounds(x, y)
     return (x > curBossArea.left and x < curBossArea.right) and (y > curBossArea.top and y < curBossArea.bottom)
 end
 
-function ZoneSpec:GetCurrentBossForArea()
-    debug("GetCurrentBossForArea")
+
+function ZoneSpec:SetBossAsKilled(encounterID)
+    debug("SetBossAsKilled", encounterID)
     for i = 1, #curBossArea do
         debug("Check boss", i)
         local boss = curBossArea[i]
-        local name, _, isKilled = GetInstanceLockTimeRemainingEncounter(boss.index)
-        if not isKilled or i == #curBossArea then
-            debug("Current boss", boss.index, boss.id)
-            return boss.index, name
+        if encounterID == boss.id then
+            boss.isKilled = true
+        elseif encounterID < 0 then
+            -- reset
+            boss.isKilled = nil
+        end
+    end
+end
+
+function ZoneSpec:GetBossForArea(index)
+    debug("GetBossForArea", index)
+    if index then
+        local boss = curBossArea[index]
+        return boss, _G.EJ_GetEncounterInfoByIndex(boss.index)
+    else
+        for i = 1, #curBossArea do
+            debug("Check boss", i)
+            local boss = curBossArea[i]
+            if not boss.isKilled or i == #curBossArea then
+                debug("Current boss", boss.index, boss.id)
+                return boss, _G.EJ_GetEncounterInfoByIndex(boss.index), i
+            end
         end
     end
 end
@@ -389,51 +407,60 @@ function ZoneSpec:FindCurrentBossArea(x, y, currentMapID, currentMapLevel, curre
             if self:IsInBossAreaBounds(x, y) then
                 debug("You are within bounds", curBossArea.key)
                 self.frame:RegisterEvent("BOSS_KILL")
+                self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
                 self.frame:RegisterEvent("PLAYER_STOPPED_MOVING")
                 break
             elseif i == #raidLevel then
                 debug("Not in a multi-boss area")
                 curBossArea = nil
                 self.frame:UnregisterEvent("BOSS_KILL")
+                self.frame:UnregisterEvent("PLAYER_TARGET_CHANGED")
                 self.frame:UnregisterEvent("PLAYER_STOPPED_MOVING")
             end
         end
     else
         debug("Not in a multi-boss map")
+        if curBossArea then
+            ZoneSpec:SetBossAsKilled(-1)
+            curBossArea = nil
+        end
         self.frame:UnregisterEvent("BOSS_KILL")
+        self.frame:UnregisterEvent("PLAYER_TARGET_CHANGED")
         self.frame:UnregisterEvent("PLAYER_STOPPED_MOVING")
     end
 end
 
 ---------------------------------
 do
-    local frame = CreateFrame("Frame", "ZSFrame", UIParent)
+    local frame = _G.CreateFrame("Frame", "ZSFrame", _G.UIParent)
     frame:SetSize(200, 64)
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
 
-    local anchor = CreateFrame("Button", nil, frame, "ChatConfigTabTemplate")
+    local anchor = _G.CreateFrame("Button", nil, frame, "ChatConfigTabTemplate")
     anchor:SetScript("OnEnter", function(self, ...)
-        debug("OnEnter: Anchor")
+        debug("OnEnter: Anchor", ...)
         if ZoneSpecDB and ZoneSpecDB.isMovable then
             debug("Config tooltip")
-            GameTooltip:ClearAllPoints()
-            GameTooltip:SetOwner(self, "ANCHOR_CURSOR", 0 ,0)
-            GameTooltip:SetText( 'Drag to move frame.\nUse "\/zs toggle" to lock placement.' )
+            _G.GameTooltip:ClearAllPoints()
+            _G.GameTooltip:SetOwner(self, "ANCHOR_CURSOR", 0, 0)
+            _G.GameTooltip:SetText( [[Drag to move frame.\nUse "/zs toggle" to lock placement.]] )
             debug("Show tooltip")
-            GameTooltip:Show()
+            _G.GameTooltip:Show()
         end
     end)
     anchor:SetScript("OnLeave", function(self, ...)
-        debug("OnLeave: Anchor")
-        GameTooltip:Hide()
+        debug("OnLeave: Anchor", ...)
+        _G.GameTooltip:Hide()
     end)
     anchor:SetScript("OnMouseDown", function(self, ...)
+        debug("OnMouseDown: Anchor", ...)
         if ZoneSpecDB and ZoneSpecDB.isMovable then
             self:GetParent():StartMoving()
         end
     end)
     anchor:SetScript("OnMouseUp", function(self, ...)
+        debug("OnMouseUp: Anchor", ...)
         self:GetParent():StopMovingOrSizing()
         local point, relativeTo, relativePoint, xOfs, yOfs = self:GetParent():GetPoint()
         debug(point, relativeTo, relativePoint, xOfs, yOfs)
@@ -441,13 +468,13 @@ do
         ZoneSpecDB.xOfs = xOfs
         ZoneSpecDB.yOfs = yOfs
     end)
-    anchor:SetScript("OnHide", function(self, ...)
+    anchor:SetScript("OnHide", function(self)
         self:GetParent():StopMovingOrSizing()
     end)
     frame.anchor = anchor
 
     local function CreateIcon(parent, isTalent)
-        local btn = CreateFrame("Button", nil, parent)
+        local btn = _G.CreateFrame("Button", nil, parent)
         btn:SetSize(32, 32)
 
         local icon = btn:CreateTexture(nil, "BACKGROUND")
@@ -462,25 +489,25 @@ do
         btn.check = check
 
         btn:SetScript("OnEnter", function(self, ...)
-            debug("OnEnter", isTalent, self:GetID())
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            debug("OnEnter", isTalent, self:GetID(), ...)
+            _G.GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             if self:GetID() then
                 if isTalent then
-                    GameTooltip:SetTalent(self:GetID())
+                    _G.GameTooltip:SetTalent(self:GetID())
                 else
-                    GameTooltip:SetSpellByID(self:GetID())
+                    _G.GameTooltip:SetSpellByID(self:GetID())
                 end
             else
-                GameTooltip:AddLine(_G.EMPTY)
+                _G.GameTooltip:AddLine(_G.EMPTY)
             end
             if ( self.extraTooltip ) then
-                GameTooltip:AddLine(self.extraTooltip)
+                _G.GameTooltip:AddLine(self.extraTooltip)
             end
-            GameTooltip:Show()
+            _G.GameTooltip:Show()
         end)
         btn:SetScript("OnLeave", function(self, ...)
-            debug("OnLeave", isTalent, self:GetID())
-            GameTooltip:Hide()
+            debug("OnLeave", isTalent, self:GetID(), ...)
+            _G.GameTooltip:Hide()
         end)
         return btn
     end
@@ -511,6 +538,7 @@ do
     frame:RegisterEvent("ADDON_LOADED")
     frame:RegisterEvent("BAG_UPDATE_DELAYED")
     frame:RegisterEvent("PLAYER_LOGIN")
+    frame:RegisterEvent("PLAYER_LOGOUT")
     frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     frame:RegisterEvent("ZONE_CHANGED")
     frame:RegisterEvent("ZONE_CHANGED_INDOORS")
@@ -549,11 +577,43 @@ do
                 self.anchor:Show()
                 self.reagent:Show()
             end
+        elseif (event == "PLAYER_LOGOUT") then
+            debug("Set character saved vars")
+            _G.ZoneSpecDB = ZoneSpecDB
+            _G.ZSChar = ZSChar
         elseif (event == "PLAYER_SPECIALIZATION_CHANGED") then
             if ... ~= "player" then return end
             ZoneSpec:UpdateIcons()
         elseif (event == "BOSS_KILL") then
+            local encounterID = ...
+            ZoneSpec:SetBossAsKilled(encounterID)
             ZoneSpec:UpdateIcons()
+        elseif (event == "PLAYER_TARGET_CHANGED") then
+            if _G.UnitAffectingCombat("player") then return end
+            local guid = _G.UnitGUID("target")
+            if guid then
+                local type, _, _, _, _, npcID = _G.strsplit("-", guid)
+                debug("Target", type, npcID)
+                if (type == "Creature" or type == "Vehicle") then
+                    for idx = 1, #curBossArea do
+                        local boss = curBossArea[idx]
+                        for i = 1, #boss.npcID do
+                            if boss.npcID[i] == tonumber(npcID) then
+                                debug("At boss", boss.index, boss.id, idx)
+                                boss.isKilled = false
+                                idx = idx - 1
+                                while idx > 0 do
+                                    local prevBoss = curBossArea[idx]
+                                    debug("Killed boss", prevBoss.index, prevBoss.id, idx)
+                                    prevBoss.isKilled = true
+                                    idx = idx - 1
+                                end
+                                return ZoneSpec:UpdateIcons()
+                            end
+                        end
+                    end
+                end
+            end
         elseif (event == "PLAYER_STOPPED_MOVING") then
             local oldBossArea = curBossArea
             ZoneSpec:FindCurrentBossArea(HBD:GetPlayerZonePosition())
@@ -584,8 +644,8 @@ end
 
 -- Slash Commands
 _G.SLASH_ZONESPEC1, _G.SLASH_ZONESPEC2 = "/zonespec", "/zs";
-function SlashCmdList.ZONESPEC(msg, editBox)
-    debug("msg:", msg)
+function _G.SlashCmdList.ZONESPEC(msg, editBox)
+    debug("msg:", msg, editBox)
     if msg == "toggle" then
         if ZoneSpecDB.isMovable then
             ZoneSpecDB.isMovable = false
