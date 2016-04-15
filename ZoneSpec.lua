@@ -43,6 +43,7 @@ local talentIcons, glyphIcons = {}, {}
 local curZone, curSpec
 local curBossArea
 local maxTalents
+local BOSS_KILL = {}
 
 local glyphIncr = 2
 local glyphStart = 2
@@ -290,7 +291,7 @@ function ZoneSpec:UpdateIcons()
                 local boss = self:GetBossForArea()
                 zone = zone[curBossArea.key][boss.index]
             end
-            if not zone.talents then
+            if zone and not zone.talents then
                 zone = nil
             end
         elseif not zone.talents then
@@ -375,8 +376,8 @@ end
 function ZoneSpec:SetBossAsKilled(encounterID)
     debug("SetBossAsKilled", encounterID)
     for i = 1, #curBossArea do
-        debug("Check boss", i)
         local boss = curBossArea[i]
+        debug("Check boss", i, boss.encID)
         if encounterID == boss.encID then
             boss.isKilled = true
         elseif encounterID < 0 then
@@ -594,6 +595,7 @@ do
             ZoneSpec:UpdateIcons()
         elseif (event == "BOSS_KILL") then
             local encounterID = ...
+            BOSS_KILL[encounterID] = true
             ZoneSpec:SetBossAsKilled(encounterID)
             ZoneSpec:UpdateIcons()
         elseif (event == "PLAYER_TARGET_CHANGED") then
@@ -606,7 +608,7 @@ do
                     for idx = 1, #curBossArea do
                         local boss = curBossArea[idx]
                         for i = 1, #boss.npcID do
-                            if boss.npcID[i] == _G.tonumber(npcID) then
+                            if boss.npcID[i] == _G.tonumber(npcID) and not BOSS_KILL[boss.encID] then
                                 debug("At boss", boss.index, boss.encID, idx)
                                 boss.isKilled = false
                                 idx = idx - 1
