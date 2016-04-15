@@ -140,9 +140,9 @@ function ZoneSpec:CreateSaveButton()
         zone.glyphs = glyphs
 
 
-        local boss, bossName
+        local boss
         if curBossArea then
-            boss, bossName = self:GetBossForArea()
+            boss = self:GetBossForArea()
             local key = curBossArea.key
             if not ZSChar[curSpec][curZone] or ZSChar[curSpec][curZone].talents then
                 ZSChar[curSpec][curZone] = {[key] = {}}
@@ -153,8 +153,8 @@ function ZoneSpec:CreateSaveButton()
         end
 
         self:UpdateIcons()
-        if boss.index then
-            zsPrint(("Talent and Glyph data has been saved for %s (%s)."):format(curZone, bossName))
+        if boss then
+            zsPrint(("Talent and Glyph data has been saved for %s (%s)."):format(curZone, boss.name))
         else
             zsPrint(("Talent and Glyph data has been saved for %s."):format(curZone))
         end
@@ -316,14 +316,14 @@ function ZoneSpec:GetBossForArea(index)
     debug("GetBossForArea", index)
     if index then
         local boss = curBossArea[index]
-        return boss, _G.EJ_GetEncounterInfo(boss.ejID)
+        return boss
     else
         for i = 1, #curBossArea do
             debug("Check boss", i)
             local boss = curBossArea[i]
             if not boss.isKilled or i == #curBossArea then
-                debug("Current boss", boss.index, boss.ejID, boss.encID)
-                return boss, _G.EJ_GetEncounterInfo(boss.ejID), i
+                debug("Current boss", boss.index, boss.name, boss.encID)
+                return boss, i
             end
         end
     end
