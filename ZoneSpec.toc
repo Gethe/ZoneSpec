@@ -7,4 +7,6 @@
 ## SavedVariablesPerCharacter: ZSChar
 
 ZoneSpec.xml
+
+MultiBossData.lua
 ZoneSpec.lua
