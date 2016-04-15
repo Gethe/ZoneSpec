@@ -16,7 +16,7 @@ ZoneSpec.multiBossAreas = {
                     index = 1,
                     name = "Northrend Beasts",
                     encID = 1088,
-                    npcID = {34796, 35144, 34799, 34797},
+                    npcID = {34796, 35144, 34799, 34797}, -- Gormok the Impaler, Acidmaw, Dreadscale, Icehowl
                 },
                 { -- Lord Jaraxxus
                     index = 2,
@@ -28,13 +28,16 @@ ZoneSpec.multiBossAreas = {
                     index = 3,
                     name = "Faction Champions",
                     encID = 1086,
-                    npcID = {34458, 34451, 34459, 34448, 34449, 34445, 34456, 34447, 34441, 34454, 34444, 34455, 34450, 34453, 34461, 34460, 34469, 34467, 34468, 34471, 34465, 34466, 34473, 34472, 34470, 34463, 34474, 34475},
+                    npcID = {
+                        34458, 34451, 34459, 34448, 34449, 34445, 34456, 34447, 34441, 34454, 34455, 34444, 34450, 34453, -- Horde
+                        34461, 34460, 34469, 34467, 34468, 34465, 34471, 34466, 34473, 34472, 34463, 34470, 34474, 34475  -- Alliance
+                    },
                 },
                 { -- Twin Val'kyr
                     index = 4,
                     name = "Twin Val'kyr",
                     encID = 1089,
-                    npcID = {34497, 34496},
+                    npcID = {34497, 34496}, --  Fjola, Eydis
                     isLastBossforArea = true,
                 },
             }
