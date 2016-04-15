@@ -1,5 +1,4 @@
 local ADDON_NAME, ZoneSpec = ...
-local ZSVersion = _G.GetAddOnMetadata(ADDON_NAME, "Version")
 
 -- Lua Globals --
 local _G = _G
@@ -8,7 +7,7 @@ local tostring, select, print = _G.tostring, _G.select, _G.print
 -- Libs --
 local HBD = _G.LibStub("HereBeDragons-1.0")
 
-
+local ZSVersion = _G.GetAddOnMetadata(ADDON_NAME, "Version")
 local debugger, debug do
     local LTD = true
     function debug(...)
@@ -67,12 +66,14 @@ local multiBossAreas = {
                 key = "886-0-1",
                 { -- Protectors of the Endless
                     index = 1,
-                    id = 1409,
+                    ejID = 683,
+                    encID = 1409,
                     npcID = {60583, 60586, 60585}, -- Protector Kaolan, Elder Asani, Elder Regail
                 },
                 { -- Tsulong
                     index = 2,
-                    id = 1505,
+                    ejID = 742,
+                    encID = 1505,
                     npcID = {62442},
                     isLastBossforArea = true,
                 },
@@ -85,7 +86,8 @@ local multiBossAreas = {
                 key = "886-0-2",
                 { -- Lei Shi
                     index = 3,
-                    id = 1506,
+                    ejID = 729,
+                    encID = 1506,
                     isLastBossforArea = true,
                 },
             },
@@ -97,7 +99,8 @@ local multiBossAreas = {
                 key = "886-0-3",
                 { -- Sha of Fear
                     index = 4,
-                    id = 1431,
+                    ejID = 709,
+                    encID = 1431,
                     isLastBossforArea = true,
                 },
             },
@@ -113,12 +116,14 @@ local multiBossAreas = {
                 key = "1026-1-1",
                 { -- Hellfire Assault
                     index = 1,
-                    id = 1778,
+                    ejID = 1426,
+                    encID = 1778,
                     npcID = {95068},
                 },
                 { -- Iron Reaver
                     index = 2,
-                    id = 1785,
+                    ejID = 1425,
+                    encID = 1785,
                     npcID = {90284},
                     isLastBossforArea = true,
                 },
@@ -187,7 +192,7 @@ function ZoneSpec:CreateSaveButton()
                 end
             end
         end
-        zone["talents"] = talents
+        zone.talents = talents
 
         --[[  Glyph layout
            2
@@ -206,14 +211,16 @@ function ZoneSpec:CreateSaveButton()
                 spell = glyphSpell,
             }
         end
-        zone["glyphs"] = glyphs
+        zone.glyphs = glyphs
 
 
         local boss, bossName
         if curBossArea then
             boss, bossName = self:GetBossForArea()
             local key = curBossArea.key
-            ZSChar[curSpec][curZone] = ZSChar[curSpec][curZone] or {[key] = {}}
+            if not ZSChar[curSpec][curZone] or ZSChar[curSpec][curZone].talents then
+                ZSChar[curSpec][curZone] = {[key] = {}}
+            end
             ZSChar[curSpec][curZone][key][boss.index] = zone
         else
             ZSChar[curSpec][curZone] = zone
@@ -370,7 +377,7 @@ function ZoneSpec:SetBossAsKilled(encounterID)
     for i = 1, #curBossArea do
         debug("Check boss", i)
         local boss = curBossArea[i]
-        if encounterID == boss.id then
+        if encounterID == boss.encID then
             boss.isKilled = true
         elseif encounterID < 0 then
             -- reset
@@ -383,14 +390,14 @@ function ZoneSpec:GetBossForArea(index)
     debug("GetBossForArea", index)
     if index then
         local boss = curBossArea[index]
-        return boss, _G.EJ_GetEncounterInfoByIndex(boss.index)
+        return boss, _G.EJ_GetEncounterInfo(boss.ejID)
     else
         for i = 1, #curBossArea do
             debug("Check boss", i)
             local boss = curBossArea[i]
             if not boss.isKilled or i == #curBossArea then
-                debug("Current boss", boss.index, boss.id)
-                return boss, _G.EJ_GetEncounterInfoByIndex(boss.index), i
+                debug("Current boss", boss.index, boss.ejID, boss.encID)
+                return boss, _G.EJ_GetEncounterInfo(boss.ejID), i
             end
         end
     end
@@ -599,13 +606,13 @@ do
                     for idx = 1, #curBossArea do
                         local boss = curBossArea[idx]
                         for i = 1, #boss.npcID do
-                            if boss.npcID[i] == tonumber(npcID) then
-                                debug("At boss", boss.index, boss.id, idx)
+                            if boss.npcID[i] == _G.tonumber(npcID) then
+                                debug("At boss", boss.index, boss.encID, idx)
                                 boss.isKilled = false
                                 idx = idx - 1
                                 while idx > 0 do
                                     local prevBoss = curBossArea[idx]
-                                    debug("Killed boss", prevBoss.index, prevBoss.id, idx)
+                                    debug("Killed boss", prevBoss.index, prevBoss.encID, idx)
                                     prevBoss.isKilled = true
                                     idx = idx - 1
                                 end
