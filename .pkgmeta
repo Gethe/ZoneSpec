@@ -10,6 +10,6 @@ ignore:
     - ZoneSpec.sublime-project
     - pkgmeta.yaml
 
-manual-changelog: CHANGELOG.md
-
-license-output: LICENSE.txt
+manual-changelog: 
+    filename: CHANGELOG.md
+    markup-type: markdown
