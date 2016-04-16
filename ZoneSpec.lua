@@ -90,12 +90,21 @@ ZSChar = {
     },
 }
 ]]
+function ZoneSpec:UpdateSaveButton(boss)
+    if not self.saveBtn then return end
+    if boss then
+        self.saveBtn.tooltipText = ("%s (%s)"):format(curZone, boss.name)
+    else
+        self.saveBtn.tooltipText = curZone
+    end
+end
 
 function ZoneSpec:CreateSaveButton()
     local btn = _G.CreateFrame("Button", "ZoneSpecSaveButton", _G.PlayerTalentFrame, "UIPanelButtonTemplate")
     btn:SetPoint("BOTTOMRIGHT", -4, 4)
     btn:SetSize(80, 22)
     btn:SetText(_G.SAVE)
+    self.saveBtn = btn
     if _G.Aurora then
         _G.Aurora[1].Reskin(btn)
     end
@@ -141,6 +150,7 @@ function ZoneSpec:CreateSaveButton()
 
 
         local boss
+        debug("zone", zone, curBossArea)
         if curBossArea then
             boss = self:GetBossForArea()
             local key = curBossArea.key
@@ -167,6 +177,7 @@ function ZoneSpec:CreateSaveButton()
             btn:Hide()
         end
     end)
+    self:UpdateSaveButton(curBossArea and self:GetBossForArea())
 end
 
 function ZoneSpec:showTalents(show)
@@ -208,22 +219,24 @@ function ZoneSpec:UpdateIcons()
     end
 
     local zone = ZSChar[curSpec][curZone] --or false
-
+    local boss = curBossArea and self:GetBossForArea()
+    debug("zone", zone, curBossArea)
     if zone then
         if curBossArea then
             if zone[curBossArea.key] then
                 debug("Set zone to boss area", curBossArea.key)
-                local boss = self:GetBossForArea()
                 zone = zone[curBossArea.key][boss.index]
             end
             if zone and not zone.talents then
                 zone = nil
             end
         elseif not zone.talents then
+            debug("Delete zone", curZone)
             zone = nil
             ZSChar[curSpec][curZone] = nil
         end
     end
+    self:UpdateSaveButton(boss)
 
     --show when new talent tier is available
     local activeSpec = _G.GetActiveSpecGroup()
@@ -559,9 +572,15 @@ do
             local oldBossArea, oldZone = curBossArea, curZone
             curZone = _G.GetMinimapZoneText()
             curSpec = _G.GetSpecialization()
-            debug(event, ";", curZone, ";", ...)
+            debug("zones", oldZone, curZone)
+
+            if (event == "PlayerZoneChanged") and (oldZone == curZone) then
+                -- if the zone text hasn't changed yet UpdateIcons will wipe any data for that zone.
+                return
+            end
 
             ZoneSpec:FindCurrentBossArea(HBD:GetPlayerZonePosition())
+            debug("bossAreas", oldBossArea, curBossArea)
             if (oldZone ~= curZone) or (oldBossArea ~= curBossArea) then
                 ZoneSpec:UpdateIcons()
             end
@@ -570,7 +589,7 @@ do
     end)
 
     HBD.RegisterCallback(ZoneSpec, "PlayerZoneChanged", function(...)
-        frame:GetScript("OnEvent")(...)
+        frame:GetScript("OnEvent")("PlayerZoneChanged", ...)
     end)
 
     ZoneSpec.frame = frame
