@@ -48,6 +48,8 @@ local BOSS_KILL = {}
 local glyphIncr = 2
 local glyphStart = 2
 
+local isBeta = _G.select(4, _G.GetBuildInfo()) >= 70000
+
 local defaults = {
     version = ZSVersion,
     point = "CENTER",
@@ -135,18 +137,20 @@ function ZoneSpec:CreateSaveButton()
          4 5 6
         ]]
 
-        local glyphs = {}
-        debug("Save the current glyph config")
-        for i = 1, _G.NUM_GLYPH_SLOTS do
-            local _, glyphType, _, glyphSpell, texture = _G.GetGlyphSocketInfo(i)
-            debug("Glyph:", i, "; Texture:", texture) --ZSChar
-            glyphs[i] = {
-                glyphType = glyphType,
-                icon = texture,
-                spell = glyphSpell,
-            }
+        if not isBeta then
+            local glyphs = {}
+            debug("Save the current glyph config")
+            for i = 1, _G.NUM_GLYPH_SLOTS do
+                local _, glyphType, _, glyphSpell, texture = _G.GetGlyphSocketInfo(i)
+                debug("Glyph:", i, "; Texture:", texture) --ZSChar
+                glyphs[i] = {
+                    glyphType = glyphType,
+                    icon = texture,
+                    spell = glyphSpell,
+                }
+            end
+            zone.glyphs = glyphs
         end
-        zone.glyphs = glyphs
 
 
         local boss
@@ -194,6 +198,7 @@ function ZoneSpec:showTalents(show)
 end
 
 function ZoneSpec:showGlyphs(show)
+    if isBeta then return end
     for i = 2, 6, 2 do
         debug("showGlyphs", glyphIcons, i)
         glyphIcons[i]:Hide()
@@ -269,23 +274,25 @@ function ZoneSpec:UpdateIcons()
         end
     end
 
-    for i = glyphStart, _G.NUM_GLYPH_SLOTS, glyphIncr do
-        local enabled, _, _, glyphSpell, path = _G.GetGlyphSocketInfo(i)
-        if enabled then
-            debug("Slot:", i, "Saved:", zone and zone.glyphs[i].spell, "Equipped:", glyphSpell)
-            if (not zone) or (zone and zone.glyphs[i].spell == glyphSpell) then
-                --Set current glyph to button
-                glyphIcons[i]:SetID(glyphSpell or 112105)
-                glyphIcons[i].icon:SetTexture(path or [[Interface\Icons\INV_Misc_QuestionMark]])
-                glyphIcons[i].icon:SetDesaturated(true)
-                glyphIcons[i].check:Show()
-            else
-                --Set saved glyph to button
-                glyphIcons[i]:SetID(zone.glyphs[i].spell)
-                glyphIcons[i].icon:SetTexture(zone.glyphs[i].icon)
-                glyphIcons[i].icon:SetDesaturated(false)
-                glyphIcons[i].check:Hide()
-                glyphsShown = true
+    if not isBeta then
+        for i = glyphStart, _G.NUM_GLYPH_SLOTS, glyphIncr do
+            local enabled, _, _, glyphSpell, path = _G.GetGlyphSocketInfo(i)
+            if enabled then
+                debug("Slot:", i, "Saved:", zone and zone.glyphs[i].spell, "Equipped:", glyphSpell)
+                if (not zone) or (zone and zone.glyphs[i].spell == glyphSpell) then
+                    --Set current glyph to button
+                    glyphIcons[i]:SetID(glyphSpell or 112105)
+                    glyphIcons[i].icon:SetTexture(path or [[Interface\Icons\INV_Misc_QuestionMark]])
+                    glyphIcons[i].icon:SetDesaturated(true)
+                    glyphIcons[i].check:Show()
+                else
+                    --Set saved glyph to button
+                    glyphIcons[i]:SetID(zone.glyphs[i].spell)
+                    glyphIcons[i].icon:SetTexture(zone.glyphs[i].icon)
+                    glyphIcons[i].icon:SetDesaturated(false)
+                    glyphIcons[i].check:Hide()
+                    glyphsShown = true
+                end
             end
         end
     end
@@ -470,17 +477,19 @@ do
         talentIcons[i] = talent
     end
 
-    for i = 2, 6, 2 do
-        local glyph = CreateIcon(frame)
-        glyph:SetPoint("TOPLEFT", talentIcons[i/2], "BOTTOMLEFT", 0, -1)
-        frame["glyph"..i] = glyph
-        glyphIcons[i] = glyph
-    end
+    if not isBeta then
+        for i = 2, 6, 2 do
+            local glyph = CreateIcon(frame)
+            glyph:SetPoint("TOPLEFT", talentIcons[i/2], "BOTTOMLEFT", 0, -1)
+            frame["glyph"..i] = glyph
+            glyphIcons[i] = glyph
+        end
 
-    local reagent = CreateIcon(frame)
-    reagent:SetNormalFontObject("SystemFont_Huge1_Outline")
-    reagent:SetPoint("TOPRIGHT", frame.talent1, "TOPLEFT", -1, 0)
-    frame.reagent = reagent
+        local reagent = CreateIcon(frame)
+        reagent:SetNormalFontObject("SystemFont_Huge1_Outline")
+        reagent:SetPoint("TOPRIGHT", frame.talent1, "TOPLEFT", -1, 0)
+        frame.reagent = reagent
+    end
 
     frame:RegisterEvent("ADDON_LOADED")
     frame:RegisterEvent("BAG_UPDATE_DELAYED")
@@ -504,7 +513,7 @@ do
                 self:UnregisterEvent("ADDON_LOADED")
                 ZoneSpec:CreateSaveButton()
             end
-        elseif (event == "BAG_UPDATE_DELAYED") then
+        elseif (event == "BAG_UPDATE_DELAYED") and not isBeta then
             local name, count, icon, id = _G.GetTalentClearInfo()
             debug("Talent Clear Info", name, count)
             --self.reagent.text:SetText(count)
@@ -522,7 +531,9 @@ do
 
             if ZoneSpecDB and ZoneSpecDB.isMovable then
                 self.anchor:Show()
-                self.reagent:Show()
+                if not isBeta then
+                    self.reagent:Show()
+                end
             end
         elseif (event == "PLAYER_LOGOUT") then
             debug("Set character saved vars")
