@@ -243,35 +243,35 @@ function ZoneSpec:UpdateIcons()
     end
     self:UpdateSaveButton(boss)
 
-    --show when new talent tier is available
-    local activeSpec = _G.GetActiveSpecGroup()
-    for row = 1, maxTalents do
-        if zone and not zone.talents[row] then
-            debug("Missing Row:", row)
-            zone.talents[row] = {}
-        end
+    for tier = 1, maxTalents do
+        local talent, savedTalent = talentIcons[tier], zone and zone.talents[tier]
+        local id, texture, desat, showCheck
+        debug("Tier", tier)
         for column = 1, _G.NUM_TALENT_COLUMNS do
-            local id, _, texture, selected = _G.GetTalentInfo(row, column, activeSpec)
-            debug("Row:", row, "Saved:", zone and zone.talents[row].id, "Selected:", selected and id)
-            if (not zone) or selected and (zone and zone.talents[row].id == id) then
-                debug("Selected Button:", talentIcons[row], "Icon:", talentIcons[row].icon)
-                --Set current talent to button
-                talentIcons[row]:SetID(id)
-                talentIcons[row].icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
-                talentIcons[row].icon:SetDesaturated(true)
-                talentIcons[row].check:Show()
-                break
-            elseif (not selected) and (zone and zone.talents[row].id == id) then
-                debug("Not Selected Button:", talentIcons[row], "Icon:", talentIcons[row].icon)
-                --Set saved talent to button
-                talentIcons[row]:SetID(zone.talents[row].id)
-                talentIcons[row].icon:SetTexture(zone.talents[row].texture)
-                talentIcons[row].icon:SetDesaturated(false)
-                talentIcons[row].check:Hide()
-                talentsShown = true
+            local talentID, _, iconTexture, selected = _G.GetTalentInfo(tier, column, _G.GetActiveSpecGroup())
+            debug("Column", column, talentID, iconTexture, selected)
+            if selected then
+                if savedTalent then
+                    debug("Saved", savedTalent.id, savedTalent.id == talentID)
+                    id = savedTalent.id
+                    texture = savedTalent.texture
+                    desat = savedTalent.id == talentID
+                    showCheck = savedTalent.id == talentID
+                else
+                    debug("Selected", _, talentID)
+                    id = talentID
+                    texture = iconTexture
+                    desat = true
+                    showCheck = false
+                end
                 break
             end
         end
+        debug("Talent", id, texture, desat, showCheck)
+        talent:SetID(id or 0)
+        talent.icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
+        talent.icon:SetDesaturated(desat)
+        talent.check:SetShown(showCheck)
     end
 
     if not isBeta then
@@ -437,7 +437,7 @@ do
         icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         btn.icon = icon
 
-        local check = btn:CreateTexture(nil, "BACKGROUND")
+        local check = btn:CreateTexture(nil, "ARTWORK")
         check:SetPoint("BOTTOMRIGHT")
         check:SetAtlas("Tracker-Check", true)
         btn.check = check
@@ -541,6 +541,7 @@ do
             _G.ZSChar = ZSChar
         elseif (event == "PLAYER_SPECIALIZATION_CHANGED") then
             if ... ~= "player" then return end
+            curSpec = _G.GetSpecialization()
             ZoneSpec:UpdateIcons()
         elseif (event == "BOSS_KILL") then
             local encounterID = ...
