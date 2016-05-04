@@ -269,9 +269,15 @@ function ZoneSpec:UpdateIcons()
         end
         debug("Talent", id, texture, desat, showCheck)
         talent:SetID(id or 0)
-        talent.icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
+        -- isBeta talent.icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
+        --[[ The additional savedTalent check is nessicary for pre-Legion when switching talents since there 
+        is a period where the row has no selected talent. This will not occur in Legion.]]
+        talent.icon:SetTexture(texture or (savedTalent and savedTalent.texture) or [[Interface\Icons\INV_Misc_QuestionMark]])
         talent.icon:SetDesaturated(desat)
         talent.check:SetShown(showCheck)
+        if not talentsShown then
+            talentsShown = (not desat) and (not showCheck)
+        end
     end
 
     if not isBeta then
