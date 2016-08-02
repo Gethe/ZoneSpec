@@ -9,14 +9,12 @@ local HBD = _G.LibStub("HereBeDragons-1.0")
 
 local ZSVersion = _G.GetAddOnMetadata(ADDON_NAME, "Version")
 local debugger, debug do
-    local LTD = true
+    local LTD = _G.LibStub("RealUI_LibTextDump-1.0", true)
     function debug(...)
-        if not debugger and LTD then
-            LTD = _G.LibStub("RealUI_LibTextDump-1.0", true)
+        if not debugger then
             if LTD then
-                debugger = LTD:New("ZoneSpec Debug Output", 640, 480)
+                debugger = LTD:New(ADDON_NAME .." Debug Output", 640, 480)
             else
-                LTD = false
                 return
             end
         end
@@ -24,12 +22,7 @@ local debugger, debug do
         local text = ("[%s]"):format(time)
         for i = 1, select("#", ...) do
             local arg = select(i, ...)
-            if (arg ~= nil) then
-                arg = tostring(arg)
-            else
-                arg = "nil"
-            end
-            text = text .. "     " .. arg
+            text = text .. "     " .. tostring(arg)
         end
         debugger:AddLine(text)
     end
