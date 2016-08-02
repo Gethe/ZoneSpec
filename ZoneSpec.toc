@@ -1,6 +1,6 @@
-## Interface: 60200
+## Interface: 70000
 ## Title: ZoneSpec
-## Notes: Saved talents and glyphs based on location.
+## Notes: Saved talents based on location.
 ## Author: Gethe
 ## Version: @project-version@
 ## SavedVariables: ZoneSpecDB

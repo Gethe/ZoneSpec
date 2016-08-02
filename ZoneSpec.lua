@@ -39,16 +39,11 @@ local function zsPrint(...)
 end
 
 local ZSChar, ZoneSpecDB
-local talentIcons, glyphIcons = {}, {}
+local talentIcons = {}
 local curZone, curSpec
 local curBossArea
 local maxTalents
 local BOSS_KILL = {}
-
-local glyphIncr = 2
-local glyphStart = 2
-
-local isBeta = _G.select(4, _G.GetBuildInfo()) >= 70000
 
 local defaults = {
     version = ZSVersion,
@@ -70,9 +65,6 @@ ZSChar = {
                     ["icon"] = "icon\\path"
                 }, -- ["1"]
             },
-            ["glyphs"] = {
-
-            }
         },
         ["Some Other Zone"] = {
             [table#532532] = { -- multi-boss area
@@ -83,9 +75,6 @@ ZSChar = {
                             ["icon"] = "icon\\path"
                         }, -- ["1"]
                     },
-                    ["glyphs"] = {
-
-                    }
                 }
             }
         },
@@ -131,28 +120,6 @@ function ZoneSpec:CreateSaveButton()
         end
         zone.talents = talents
 
-        --[[  Glyph layout
-           2
-          3 1
-         4 5 6
-        ]]
-
-        if not isBeta then
-            local glyphs = {}
-            debug("Save the current glyph config")
-            for i = 1, _G.NUM_GLYPH_SLOTS do
-                local _, glyphType, _, glyphSpell, texture = _G.GetGlyphSocketInfo(i)
-                debug("Glyph:", i, "; Texture:", texture) --ZSChar
-                glyphs[i] = {
-                    glyphType = glyphType,
-                    icon = texture,
-                    spell = glyphSpell,
-                }
-            end
-            zone.glyphs = glyphs
-        end
-
-
         local boss
         debug("zone", zone, curBossArea)
         if curBossArea then
@@ -168,9 +135,9 @@ function ZoneSpec:CreateSaveButton()
 
         self:UpdateIcons()
         if boss then
-            zsPrint(("Talent and Glyph data has been saved for %s (%s)."):format(curZone, boss.name))
+            zsPrint(("Talent data has been saved for %s (%s)."):format(curZone, boss.name))
         else
-            zsPrint(("Talent and Glyph data has been saved for %s."):format(curZone))
+            zsPrint(("Talent data has been saved for %s."):format(curZone))
         end
     end)
     _G.hooksecurefunc("PlayerTalentFrameActivateButton_Update", function()
@@ -197,29 +164,14 @@ function ZoneSpec:showTalents(show)
     end
 end
 
-function ZoneSpec:showGlyphs(show)
-    if isBeta then return end
-    for i = 2, 6, 2 do
-        debug("showGlyphs", glyphIcons, i)
-        glyphIcons[i]:Hide()
-    end
-    if show then
-        for i = 2, 6, 2 do
-            glyphIcons[i]:Show()
-        end
-    end
-end
-
 function ZoneSpec:UpdateIcons()
     maxTalents = _G.GetMaxTalentTier()
     debug("UpdateIcons;", curZone, curSpec)
 
     local talentsShown = false
-    local glyphsShown = false
     if (not curSpec) or (maxTalents == 0) then
         debug("UpdateIcons;", "nope")
         self:showTalents((ZoneSpecDB.isMovable) or (talentsShown))
-        self:showGlyphs((ZoneSpecDB.isMovable) or (glyphsShown))
         return
     end
 
@@ -248,7 +200,7 @@ function ZoneSpec:UpdateIcons()
         local id, texture, desat, showCheck
         debug("Tier", tier)
         for column = 1, _G.NUM_TALENT_COLUMNS do
-            local talentID, _, iconTexture, selected = _G.GetTalentInfo(tier, column, _G.GetActiveSpecGroup())
+            local talentID, _, iconTexture, selected = _G.GetTalentInfo(tier, column, 1)
             debug("Column", column, talentID, iconTexture, selected)
             if selected then
                 if savedTalent then
@@ -269,10 +221,7 @@ function ZoneSpec:UpdateIcons()
         end
         debug("Talent", id, texture, desat, showCheck)
         talent:SetID(id or 0)
-        -- isBeta talent.icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
-        --[[ The additional savedTalent check is nessicary for pre-Legion when switching talents since there 
-        is a period where the row has no selected talent. This will not occur in Legion.]]
-        talent.icon:SetTexture(texture or (savedTalent and savedTalent.texture) or [[Interface\Icons\INV_Misc_QuestionMark]])
+        talent.icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
         talent.icon:SetDesaturated(desat)
         talent.check:SetShown(showCheck)
         if not talentsShown then
@@ -280,32 +229,8 @@ function ZoneSpec:UpdateIcons()
         end
     end
 
-    if not isBeta then
-        for i = glyphStart, _G.NUM_GLYPH_SLOTS, glyphIncr do
-            local enabled, _, _, glyphSpell, path = _G.GetGlyphSocketInfo(i)
-            if enabled then
-                debug("Slot:", i, "Saved:", zone and zone.glyphs[i].spell, "Equipped:", glyphSpell)
-                if (not zone) or (zone and zone.glyphs[i].spell == glyphSpell) then
-                    --Set current glyph to button
-                    glyphIcons[i]:SetID(glyphSpell or 112105)
-                    glyphIcons[i].icon:SetTexture(path or [[Interface\Icons\INV_Misc_QuestionMark]])
-                    glyphIcons[i].icon:SetDesaturated(true)
-                    glyphIcons[i].check:Show()
-                else
-                    --Set saved glyph to button
-                    glyphIcons[i]:SetID(zone.glyphs[i].spell)
-                    glyphIcons[i].icon:SetTexture(zone.glyphs[i].icon)
-                    glyphIcons[i].icon:SetDesaturated(false)
-                    glyphIcons[i].check:Hide()
-                    glyphsShown = true
-                end
-            end
-        end
-    end
-
     debug("UpdateIcons;", "Show or Hide")
     self:showTalents((ZoneSpecDB.isMovable) or (talentsShown))
-    self:showGlyphs((ZoneSpecDB.isMovable) or (glyphsShown))
 end
 
 function ZoneSpec:SetZSChar(isReset)
@@ -404,7 +329,7 @@ do
             debug("Config tooltip")
             _G.GameTooltip:ClearAllPoints()
             _G.GameTooltip:SetOwner(self, "ANCHOR_CURSOR", 0, 0)
-            _G.GameTooltip:SetText( [[Drag to move frame.\nUse "/zs toggle" to lock placement.]] )
+            _G.GameTooltip:SetText( "Drag to move frame.\nUse \"/zs toggle\" to lock placement." )
             debug("Show tooltip")
             _G.GameTooltip:Show()
         end
@@ -483,22 +408,7 @@ do
         talentIcons[i] = talent
     end
 
-    if not isBeta then
-        for i = 2, 6, 2 do
-            local glyph = CreateIcon(frame)
-            glyph:SetPoint("TOPLEFT", talentIcons[i/2], "BOTTOMLEFT", 0, -1)
-            frame["glyph"..i] = glyph
-            glyphIcons[i] = glyph
-        end
-
-        local reagent = CreateIcon(frame)
-        reagent:SetNormalFontObject("SystemFont_Huge1_Outline")
-        reagent:SetPoint("TOPRIGHT", frame.talent1, "TOPLEFT", -1, 0)
-        frame.reagent = reagent
-    end
-
     frame:RegisterEvent("ADDON_LOADED")
-    frame:RegisterEvent("BAG_UPDATE_DELAYED")
     frame:RegisterEvent("PLAYER_LOGIN")
     frame:RegisterEvent("PLAYER_LOGOUT")
     frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
@@ -519,27 +429,12 @@ do
                 self:UnregisterEvent("ADDON_LOADED")
                 ZoneSpec:CreateSaveButton()
             end
-        elseif (event == "BAG_UPDATE_DELAYED") and not isBeta then
-            local name, count, icon, id = _G.GetTalentClearInfo()
-            debug("Talent Clear Info", name, count)
-            --self.reagent.text:SetText(count)
-            if (ZoneSpecDB.isMovable) or (count and count <= 6) then
-                self.reagent:Show()
-                self.reagent.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_Dust_02")
-                self.reagent:SetText(count or 0)
-                self.reagent:SetID(id)
-            else
-                self.reagent:Hide()
-            end
         elseif (event == "PLAYER_LOGIN") then
             debug("Create character saved vars")
             ZoneSpec:SetZSChar()
 
             if ZoneSpecDB and ZoneSpecDB.isMovable then
                 self.anchor:Show()
-                if not isBeta then
-                    self.reagent:Show()
-                end
             end
         elseif (event == "PLAYER_LOGOUT") then
             debug("Set character saved vars")
@@ -633,7 +528,7 @@ function _G.SlashCmdList.ZONESPEC(msg, editBox)
             zsPrint("ZoneSpec is unlocked");
         end
     elseif msg == "clear" then
-        -- Clear the talent and glyph data for the current location.
+        -- Clear the talent data for the current location.
         ZSChar[curSpec][curZone] = nil
         ZoneSpec:UpdateIcons()
         zsPrint("Data for", curZone, "has been cleared.");
@@ -654,7 +549,7 @@ function _G.SlashCmdList.ZONESPEC(msg, editBox)
     else
         print("Usage: /zs |cff22dd22command|r");
         print("|cff22dd22toggle|r - Show/Hide the anchor frame to move it or lock it in place.")
-        print("|cff22dd22clear|r - Clear saved talents and glyphs for the current area.")
+        print("|cff22dd22clear|r - Clear saved talents for the current area.")
         print("|cff22dd22reset|r - Reset all data for the current character.")
     end
 end
