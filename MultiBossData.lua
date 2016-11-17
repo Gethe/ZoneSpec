@@ -113,8 +113,32 @@ ZoneSpec.multiBossAreas = {
                     encID = 1785, 
                     npcID = {90284}, 
                     isLastBossforArea = true, 
-                }, 
+                }
             } 
-        } 
+        }
+    },
+    [1041] = { -- Halls of Valor
+        [3] = { -- Floor 3: Halls of Valor
+            { 
+                left = 0, 
+                right = 1, 
+                top = 0, 
+                bottom = 1, 
+                key = "1041-3-1", 
+                { -- God-King Skovald
+                    index = 1, 
+                    name = EJ_GetEncounterInfo(1488),
+                    encID = 1808, 
+                    npcID = {95675}, 
+                }, 
+                { -- Odyn
+                    index = 2, 
+                    name = EJ_GetEncounterInfo(1489),
+                    encID = 1809, 
+                    npcID = {95676}, 
+                    isLastBossforArea = true, 
+                }
+            } 
+        }
     }, 
 } 
