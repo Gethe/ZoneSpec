@@ -446,9 +446,9 @@ do
             if _G.UnitAffectingCombat("player") then return end
             local guid = _G.UnitGUID("target")
             if guid then
-                local type, _, _, _, _, npcID = _G.strsplit("-", guid)
-                debug("Target", type, npcID)
-                if (type == "Creature" or type == "Vehicle") then
+                local npcType, _, _, _, _, npcID = _G.strsplit("-", guid)
+                debug("Target", npcType, npcID)
+                if (npcType == "Creature" or npcType == "Vehicle") then
                     for idx = 1, #curBossArea do
                         local boss = curBossArea[idx]
                         for i = 1, #boss.npcID do
@@ -512,23 +512,26 @@ function _G.SlashCmdList.ZONESPEC(msg, editBox)
             ZoneSpec:UpdateIcons()
             ZoneSpec.frame:GetScript("OnEvent")(ZoneSpec.frame, "BAG_UPDATE_DELAYED")
             ZoneSpec.frame.anchor:Hide()
-            zsPrint("ZoneSpec is locked");
+            zsPrint("ZoneSpec is locked")
         else
             ZoneSpecDB.isMovable = true
             ZoneSpec:UpdateIcons()
             ZoneSpec.frame:GetScript("OnEvent")(ZoneSpec.frame, "BAG_UPDATE_DELAYED")
             ZoneSpec.frame.anchor:Show()
-            zsPrint("ZoneSpec is unlocked");
+            zsPrint("ZoneSpec is unlocked")
         end
     elseif msg == "clear" then
         -- Clear the talent data for the current location.
         ZSChar[curSpec][curZone] = nil
         ZoneSpec:UpdateIcons()
-        zsPrint("Data for", curZone, "has been cleared.");
+        zsPrint("Data for", curZone, "has been cleared.")
     elseif msg == "reset" then
         debug("Reset character saved vars")
         ZoneSpec:SetZSChar(true)
-        zsPrint("Data for this character has been reset.");
+        zsPrint("Data for this character has been reset.")
+    elseif msg == "zone" then
+        local _, _, currentMapID, currentMapLevel = HBD:GetPlayerZonePosition()
+        zsPrint(("mapID: %d mapLevel: %d"):format(currentMapID, currentMapLevel))
     elseif msg == "debug" then
         if debugger then
             if debugger:Lines() == 0 then
